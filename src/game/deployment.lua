@@ -9,6 +9,9 @@ local UnitCards = require('src.cards.unit_cards')
 -- 中文字体
 local chineseFont = {}
 
+-- 点击区域（在draw中填充，在mousepressed中使用）
+Deployment.clickAreas = {}
+
 -- 布阵状态
 local deploymentState = {
     selectedCommand = nil,      -- 选择的大营卡牌
