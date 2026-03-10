@@ -362,67 +362,11 @@ function Battle.startTurn()
     player.tempPower = generatedPower
     addLog(player.name .. " 大营生成 " .. generatedPower .. " 点战力")
     
-    -- 自动进入部署阶段
-    currentPhase = "deploy"
-    addLog("请将战力部署到殿后单位")
+    -- 自动开始传递链（大营→殿后→中军→先锋→敌方大营）
+    Battle.startTransfer()
 end
 
 -- 部署战力到殿后单位
-function Battle.deployPower(rearUnitIndex, amount)
-    local player = players[activePlayer]
-    
-    if currentPhase ~= "deploy" then
-        addLog("错误：当前不是部署阶段")
-        return false
-    end
-    
-    if amount > player.tempPower then
-        addLog("错误：战力不足")
-        return false
-    end
-    
-    if rearUnitIndex < 1 or rearUnitIndex > 3 then
-        addLog("错误：无效的殿后单位")
-        return false
-    end
-    
-    local rearUnit = player.units[Battle.ROW.REAR][rearUnitIndex]
-    if rearUnit.currentPower + amount > rearUnit.maxPower then
-        addLog("错误：超出单位战力上限")
-        return false
-    end
-    
-    -- 部署战力
-    rearUnit.currentPower = rearUnit.currentPower + amount
-    player.tempPower = player.tempPower - amount
-    
-    addLog(player.name .. " 向 殿后" .. rearUnitIndex .. " 部署 " .. amount .. " 点战力")
-    
-    -- 如果战力分配完毕，自动开始传递
-    if player.tempPower <= 0 then
-        Battle.startTransfer()
-    end
-    
-    return true
-end
-
--- 快速平均分配战力
-function Battle.autoDeploy()
-    local player = players[activePlayer]
-    local rearUnits = player.units[Battle.ROW.REAR]
-    
-    -- 平均分配到3个殿后单位
-    local perUnit = math.floor(player.tempPower / 3)
-    local remainder = player.tempPower % 3
-    
-    for i = 1, 3 do
-        local amount = perUnit + (i <= remainder and 1 or 0)
-        if amount > 0 then
-            Battle.deployPower(i, amount)
-        end
-    end
-end
-
 -- 计算单位在屏幕上的位置
 function Battle.getUnitPosition(playerId, rowType, unitIndex, screenWidth, screenHeight)
     local startX = screenWidth / 2 - 200
@@ -449,144 +393,125 @@ function Battle.getUnitPosition(playerId, rowType, unitIndex, screenWidth, scree
     return nil
 end
 
--- 开始传递阶段
+-- 获取大营位置
+function Battle.getCommandPosition(playerId, screenWidth, screenHeight)
+    return Battle.getUnitPosition(playerId, Battle.ROW.COMMAND, 1, screenWidth, screenHeight)
+end
+
+-- 开始完整的战力传递链
 function Battle.startTransfer()
     currentPhase = "transfer"
     addLog("开始战力传递...")
     
     local player = players[activePlayer]
+    local defender = players[activePlayer == 1 and 2 or 1]
     local screenWidth = love.graphics.getWidth()
     local screenHeight = love.graphics.getHeight()
     
-    -- 计算总战力球数量（用于判断动画是否全部完成）
-    local totalBalls = 0
-    local completedBalls = 0
-    
-    -- 传递顺序：殿后 → 中军 → 先锋
-    -- 1. 殿后 → 中军
-    local rearToCenter = {}
+    -- 清空所有单位的当前战力（准备新的传递链）
     for i = 1, 3 do
-        local rearUnit = player.units[Battle.ROW.REAR][i]
-        if rearUnit and rearUnit.currentPower > 0 then
-            table.insert(rearToCenter, {
-                fromIndex = i,
-                amount = rearUnit.currentPower
-            })
-            rearUnit.currentPower = 0
+        if player.units[Battle.ROW.REAR][i] then
+            player.units[Battle.ROW.REAR][i].currentPower = 0
+        end
+        if player.units[Battle.ROW.CENTER][i] then
+            player.units[Battle.ROW.CENTER][i].currentPower = 0
+        end
+        if player.units[Battle.ROW.VANGUARD][i] then
+            player.units[Battle.ROW.VANGUARD][i].currentPower = 0
         end
     end
     
-    -- 2. 中军 → 先锋
-    local centerToVanguard = {}
+    -- 总战力（大营生成的）
+    local totalPower = player.basePowerGeneration
+    
+    -- 创建传递链
+    -- 第1步：大营 → 殿后（平均分配到3个殿后单位）
+    addLog("大营生成战力并传递到殿后...")
+    
+    local commandPos = Battle.getCommandPosition(activePlayer, screenWidth, screenHeight)
+    
     for i = 1, 3 do
-        local centerUnit = player.units[Battle.ROW.CENTER][i]
-        if centerUnit and centerUnit.currentPower > 0 then
-            table.insert(centerToVanguard, {
-                fromIndex = i,
-                amount = centerUnit.currentPower
-            })
-            centerUnit.currentPower = 0
-        end
-    end
-    
-    -- 创建战力球动画
-    -- 殿后 → 中军
-    for _, transfer in ipairs(rearToCenter) do
-        local sourcePos = Battle.getUnitPosition(activePlayer, Battle.ROW.REAR, transfer.fromIndex, screenWidth, screenHeight)
-        -- 平均分配到中军三个单位
-        for j = 1, 3 do
-            local targetPos = Battle.getUnitPosition(activePlayer, Battle.ROW.CENTER, j, screenWidth, screenHeight)
-            if sourcePos and targetPos then
-                totalBalls = totalBalls + 1
-                Battle.createPowerBall(sourcePos, targetPos, math.floor(transfer.amount / 3), function(ball)
-                    -- 球到达后，增加目标单位的战力
-                    player.units[Battle.ROW.CENTER][j].currentPower = 
-                        (player.units[Battle.ROW.CENTER][j].currentPower or 0) + ball.power
-                    completedBalls = completedBalls + 1
-                end)
-            end
-        end
-    end
-    
-    -- 中军 → 先锋（延迟一点创建，让第一阶段的球先飞）
-    local delay = 0.5  -- 延迟时间（秒）
-    for _, transfer in ipairs(centerToVanguard) do
-        local sourcePos = Battle.getUnitPosition(activePlayer, Battle.ROW.CENTER, transfer.fromIndex, screenWidth, screenHeight)
-        for j = 1, 3 do
-            local targetPos = Battle.getUnitPosition(activePlayer, Battle.ROW.VANGUARD, j, screenWidth, screenHeight)
-            if sourcePos and targetPos then
-                totalBalls = totalBalls + 1
-                -- 使用延迟回调创建球
-                local timer = 0
-                local oldUpdate = Battle.update
-                Battle.update = function(dt)
-                    if oldUpdate then oldUpdate(dt) end
-                    timer = timer + dt
-                    if timer >= delay then
-                        Battle.createPowerBall(sourcePos, targetPos, math.floor(transfer.amount / 3), function(ball)
-                            player.units[Battle.ROW.VANGUARD][j].currentPower = 
-                                (player.units[Battle.ROW.VANGUARD][j].currentPower or 0) + ball.power
-                            completedBalls = completedBalls + 1
-                        end)
-                        Battle.update = oldUpdate  -- 恢复原来的update
+        local rearPos = Battle.getUnitPosition(activePlayer, Battle.ROW.REAR, i, screenWidth, screenHeight)
+        if commandPos and rearPos then
+            local powerAmount = math.floor(totalPower / 3) + (i <= (totalPower % 3) and 1 or 0)
+            Battle.createPowerBall(commandPos, rearPos, powerAmount, function(ball)
+                -- 球到达殿后
+                player.units[Battle.ROW.REAR][i].currentPower = 
+                    (player.units[Battle.ROW.REAR][i].currentPower or 0) + ball.power
+                
+                -- 第2步：殿后 → 中军（这个殿后单位的战力传递到3个中军单位）
+                local rearPower = player.units[Battle.ROW.REAR][i].currentPower
+                if rearPower > 0 then
+                    player.units[Battle.ROW.REAR][i].currentPower = 0
+                    
+                    for j = 1, 3 do
+                        local centerPos = Battle.getUnitPosition(activePlayer, Battle.ROW.CENTER, j, screenWidth, screenHeight)
+                        if rearPos and centerPos then
+                            Battle.createPowerBall(rearPos, centerPos, math.floor(rearPower / 3), function(centerBall)
+                                -- 球到达中军
+                                player.units[Battle.ROW.CENTER][j].currentPower = 
+                                    (player.units[Battle.ROW.CENTER][j].currentPower or 0) + centerBall.power
+                                
+                                -- 第3步：中军 → 先锋（这个中军单位的战力传递到3个先锋单位）
+                                local centerPower = player.units[Battle.ROW.CENTER][j].currentPower
+                                if centerPower > 0 then
+                                    player.units[Battle.ROW.CENTER][j].currentPower = 0
+                                    
+                                    for k = 1, 3 do
+                                        local vanguardPos = Battle.getUnitPosition(activePlayer, Battle.ROW.VANGUARD, k, screenWidth, screenHeight)
+                                        if centerPos and vanguardPos then
+                                            Battle.createPowerBall(centerPos, vanguardPos, math.floor(centerPower / 3), function(vanguardBall)
+                                                -- 球到达先锋
+                                                player.units[Battle.ROW.VANGUARD][k].currentPower = 
+                                                    (player.units[Battle.ROW.VANGUARD][k].currentPower or 0) + vanguardBall.power
+                                                
+                                                -- 第4步：先锋 → 敌方大营（攻击！）
+                                                local vanguardPower = player.units[Battle.ROW.VANGUARD][k].currentPower
+                                                if vanguardPower > 0 then
+                                                    local enemyCommandPos = Battle.getCommandPosition(activePlayer == 1 and 2 or 1, screenWidth, screenHeight)
+                                                    if vanguardPos and enemyCommandPos then
+                                                        Battle.createPowerBall(vanguardPos, enemyCommandPos, vanguardPower, function(attackBall)
+                                                            -- 球到达敌方大营，造成伤害！
+                                                            local damage = attackBall.power * (player.units[Battle.ROW.VANGUARD][k].attack or 1)
+                                                            defender.commandHp = defender.commandHp - damage
+                                                            addLog(player.name .. " 的先锋造成 " .. damage .. " 点伤害！")
+                                                            
+                                                            -- 清空该先锋的战力
+                                                            player.units[Battle.ROW.VANGUARD][k].currentPower = 0
+                                                        end)
+                                                    end
+                                                end
+                                            end)
+                                        end
+                                    end
+                                end
+                            end)
+                        end
                     end
                 end
-            end
+            end)
         end
-    end
-    
-    if #rearToCenter > 0 then
-        addLog("殿后向中军传递战力...")
-    end
-    if #centerToVanguard > 0 then
-        addLog("中军向先锋传递战力...")
     end
 end
 
 -- 检查传递动画是否完成
 function Battle.checkTransferComplete()
     if #powerBalls == 0 then
-        -- 所有球都到达，进入攻击阶段
-        Battle.startAttack()
-    end
-end
-
--- 开始攻击阶段
-function Battle.startAttack()
-    currentPhase = "attack"
-    
-    local attacker = players[activePlayer]
-    local defender = players[activePlayer == 1 and 2 or 1]
-    
-    -- 计算总攻击力
-    local totalAttack = 0
-    for i = 1, 3 do
-        local vanguard = attacker.units[Battle.ROW.VANGUARD][i]
-        totalAttack = totalAttack + vanguard.currentPower * vanguard.attack
-        vanguard.currentPower = 0  -- 消耗战力
-    end
-    
-    if totalAttack > 0 then
-        defender.commandHp = defender.commandHp - totalAttack
-        addLog(attacker.name .. " 的先锋攻击敌方大营，造成 " .. totalAttack .. " 点伤害！")
-        addLog(defender.name .. " 大营剩余生命值: " .. defender.commandHp)
-        
-        -- 检查胜利条件
+        -- 所有球都到达，检查是否胜利
+        local defender = players[activePlayer == 1 and 2 or 1]
         if defender.commandHp <= 0 then
             addLog(defender.name .. " 大营被攻破！")
-            addLog(attacker.name .. " 获得胜利！")
+            addLog(players[activePlayer].name .. " 获得胜利！")
             currentPhase = "victory"
-            return
+        else
+            addLog(defender.name .. " 大营剩余生命值: " .. defender.commandHp)
+            -- 回合结束，切换玩家
+            Battle.endTurn()
         end
-    else
-        addLog(attacker.name .. " 本回合没有造成有效伤害")
     end
-    
-    -- 回合结束，切换玩家
-    Battle.endTurn()
 end
 
--- 结束回合
+-- 回合结束
 function Battle.endTurn()
     -- 切换玩家
     activePlayer = (activePlayer == 1) and 2 or 1
