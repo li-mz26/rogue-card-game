@@ -16,27 +16,28 @@ local chineseFont = {}
 -- 加载中文字体
 local function loadChineseFonts()
     local fontPaths = {
-        "C:/Windows/Fonts/msyh.ttc",
-        "C:/Windows/Fonts/msyhbd.ttc",
-        "C:/Windows/Fonts/simhei.ttf",
-        "C:/Windows/Fonts/simsun.ttc",
-        "C:/Windows/Fonts/simkai.ttf",
+        "C:/Windows/Fonts/simhei.ttf",    -- 黑体 (推荐)
+        "C:/Windows/Fonts/simkai.ttf",    -- 楷体
+        "C:/Windows/Fonts/simsun.ttc",    -- 宋体
+        "C:/Windows/Fonts/msyh.ttc",      -- 微软雅黑
+        "C:/Windows/Fonts/msyhbd.ttc",    -- 微软雅黑粗体
     }
     
     for _, path in ipairs(fontPaths) do
-        if io.open(path, "r") then
-            local success = pcall(function()
-                chineseFont[10] = love.graphics.newFont(path, 10)
-                chineseFont[12] = love.graphics.newFont(path, 12)
-                chineseFont[16] = love.graphics.newFont(path, 16)
-                chineseFont[18] = love.graphics.newFont(path, 18)
-                chineseFont[20] = love.graphics.newFont(path, 20)
-            end)
-            if success then
-                return true
-            end
+        local success = pcall(function()
+            chineseFont[10] = love.graphics.newFont(path, 10)
+            chineseFont[12] = love.graphics.newFont(path, 12)
+            chineseFont[16] = love.graphics.newFont(path, 16)
+            chineseFont[18] = love.graphics.newFont(path, 18)
+            chineseFont[20] = love.graphics.newFont(path, 20)
+        end)
+        if success then
+            print("成功加载字体: " .. path)
+            return true
         end
     end
+    
+    print("警告: 未找到中文字体")
     return false
 end
 
