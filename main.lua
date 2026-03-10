@@ -33,12 +33,15 @@ end
 
 function love.mousepressed(x, y, button)
     Input.mousepressed(x, y, button)
+    GameState.mousepressed(x, y, button)
 end
 
 function love.mousereleased(x, y, button)
     Input.mousereleased(x, y, button)
+    GameState.mousereleased(x, y, button)
 end
 
 function love.mousemoved(x, y, dx, dy)
     Input.mousemoved(x, y, dx, dy)
+    GameState.mousemoved(x, y, dx, dy)
 end

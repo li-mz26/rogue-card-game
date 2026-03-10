@@ -19,6 +19,28 @@ local currentState = GameState.STATE.MENU
 -- 状态处理器
 local stateHandlers = {}
 
+-- 输入事件转发
+function GameState.mousepressed(x, y, button)
+    local handler = stateHandlers[currentState]
+    if handler and handler.mousepressed then
+        handler.mousepressed(x, y, button)
+    end
+end
+
+function GameState.mousereleased(x, y, button)
+    local handler = stateHandlers[currentState]
+    if handler and handler.mousereleased then
+        handler.mousereleased(x, y, button)
+    end
+end
+
+function GameState.mousemoved(x, y, dx, dy)
+    local handler = stateHandlers[currentState]
+    if handler and handler.mousemoved then
+        handler.mousemoved(x, y, dx, dy)
+    end
+end
+
 function GameState.init()
     -- 初始化各个状态处理器
     stateHandlers[GameState.STATE.MENU] = require('src.ui.menu')
