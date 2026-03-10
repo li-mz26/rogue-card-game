@@ -28,3 +28,8 @@ release/
 
 # Log files
 *.log
+
+# Font files (large binary files)
+assets/fonts/*.ttf
+assets/fonts/*.ttc
+assets/fonts/*.otf
