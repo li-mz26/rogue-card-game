@@ -12,6 +12,10 @@ local chineseFont = {}
 -- 点击区域（在draw中填充，在mousepressed中使用）
 Deployment.clickAreas = {}
 
+-- 滚轮滚动偏移
+local cardListOffset = 0
+local cardListMaxOffset = 0
+
 -- 布阵状态
 local deploymentState = {
     selectedCommand = nil,      -- 选择的大营卡牌
@@ -461,16 +465,33 @@ function Deployment.drawCardSelection(screenWidth, screenHeight)
     
     -- 标题
     love.graphics.setColor(0.9, 0.8, 0.4)
-    love.graphics.setFont(chineseFont[18] or love.graphics.newFont(18))
-    love.graphics.print("可选武将 (点击添加到选中位置)", panelX + 10, panelY + 10)
+    love.graphics.setFont(chineseFont[16] or love.graphics.newFont(16))
+    love.graphics.print("可选武将 (滚轮滚动)", panelX + 10, panelY + 8)
     
-    -- 显示所有卡牌（不再分类）
-    local cardY = panelY + 40
-    local cardHeight = 55
-    local cardGap = 8
+    -- 计算滚动相关
+    local cardHeight = 50
+    local cardGap = 6
+    local totalCardHeight = cardHeight + cardGap
+    local visibleHeight = panelHeight - 50
+    local totalHeight = #deploymentState.availableCards * totalCardHeight
+    cardListMaxOffset = math.max(0, totalHeight - visibleHeight)
     
-    for _, card in ipairs(deploymentState.availableCards) do
-        if cardY + cardHeight < panelY + panelHeight - 10 then
+    -- 裁剪区域（只显示面板内的内容）
+    love.graphics.setStencilTest("greater", 0)
+    love.graphics.rectangle("fill", panelX, panelY + 30, panelWidth, panelHeight - 30)
+    love.graphics.setStencilTest()
+    
+    -- 使用 scissor 裁剪
+    love.graphics.setScissor(panelX, panelY + 30, panelWidth, panelHeight - 30)
+    
+    -- 显示所有卡牌（支持滚动）
+    local startY = panelY + 40 - cardListOffset
+    
+    for i, card in ipairs(deploymentState.availableCards) do
+        local cardY = startY + (i - 1) * totalCardHeight
+        
+        -- 只绘制可见的卡牌
+        if cardY + cardHeight >= panelY + 30 and cardY <= panelY + panelHeight - 10 then
             -- 卡牌背景
             local rarityColor = UnitCards.getRarityColor(card.rarity)
             love.graphics.setColor(0.2, 0.2, 0.25)
@@ -480,20 +501,20 @@ function Deployment.drawCardSelection(screenWidth, screenHeight)
             
             -- 卡牌名称
             love.graphics.setColor(1, 1, 1)
-            love.graphics.setFont(chineseFont[13] or love.graphics.newFont(13))
-            love.graphics.print(card.name, panelX + 15, cardY + 5)
+            love.graphics.setFont(chineseFont[12] or love.graphics.newFont(12))
+            love.graphics.print(card.name, panelX + 15, cardY + 4)
             
             -- 称号
             love.graphics.setColor(0.8, 0.8, 0.6)
-            love.graphics.setFont(chineseFont[10] or love.graphics.newFont(10))
-            love.graphics.print(card.title, panelX + 15, cardY + 22)
+            love.graphics.setFont(chineseFont[9] or love.graphics.newFont(9))
+            love.graphics.print(card.title, panelX + 15, cardY + 18)
             
             -- 说明
             love.graphics.setColor(0.7, 0.7, 0.7)
-            love.graphics.setFont(chineseFont[9] or love.graphics.newFont(9))
-            love.graphics.printf(card.description, panelX + 15, cardY + 36, panelWidth - 30, "left")
+            love.graphics.setFont(chineseFont[8] or love.graphics.newFont(8))
+            love.graphics.printf(card.description, panelX + 15, cardY + 32, panelWidth - 30, "left")
             
-            -- 存储点击区域
+            -- 存储点击区域（考虑滚动偏移）
             if not Deployment.clickAreas then Deployment.clickAreas = {} end
             table.insert(Deployment.clickAreas, {
                 type = "card",
@@ -501,9 +522,18 @@ function Deployment.drawCardSelection(screenWidth, screenHeight)
                 x = panelX + 10, y = cardY,
                 width = panelWidth - 20, height = cardHeight
             })
-            
-            cardY = cardY + cardHeight + cardGap
         end
+    end
+    
+    -- 恢复 scissor
+    love.graphics.setScissor()
+    
+    -- 绘制滚动条（如果有）
+    if cardListMaxOffset > 0 then
+        local scrollbarHeight = visibleHeight * (visibleHeight / totalHeight)
+        local scrollbarY = panelY + 30 + (cardListOffset / cardListMaxOffset) * (visibleHeight - scrollbarHeight)
+        love.graphics.setColor(0.4, 0.4, 0.5)
+        love.graphics.rectangle("fill", panelX + panelWidth - 8, scrollbarY, 6, scrollbarHeight, 3)
     end
 end
 
@@ -632,6 +662,22 @@ function Deployment.mousepressed(x, y, button)
     
     -- 使用已经计算好的点击区域（在draw中填充）
     Deployment.handleClick(x, y)
+end
+
+function Deployment.wheelmoved(x, y)
+    -- 滚轮滚动卡牌列表
+    local panelX = love.graphics.getWidth() - 320
+    local panelY = 80
+    local panelWidth = 300
+    local panelHeight = love.graphics.getHeight() - 160
+    
+    local mx, my = love.mouse.getPosition()
+    -- 检查鼠标是否在卡牌列表区域内
+    if mx >= panelX and mx <= panelX + panelWidth and my >= panelY and my <= panelY + panelHeight then
+        cardListOffset = cardListOffset - y * 30  -- 每次滚动30像素
+        -- 限制滚动范围
+        cardListOffset = math.max(0, math.min(cardListMaxOffset, cardListOffset))
+    end
 end
 
 -- 处理点击（需要在draw之后调用）

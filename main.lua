@@ -45,3 +45,7 @@ function love.mousemoved(x, y, dx, dy)
     Input.mousemoved(x, y, dx, dy)
     GameState.mousemoved(x, y, dx, dy)
 end
+
+function love.wheelmoved(x, y)
+    GameState.wheelmoved(x, y)
+end

@@ -42,6 +42,13 @@ function GameState.mousemoved(x, y, dx, dy)
     end
 end
 
+function GameState.wheelmoved(x, y)
+    local handler = stateHandlers[currentState]
+    if handler and handler.wheelmoved then
+        handler.wheelmoved(x, y)
+    end
+end
+
 function GameState.init()
     -- 初始化各个状态处理器
     stateHandlers[GameState.STATE.MENU] = require('src.ui.menu')
