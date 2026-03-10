@@ -176,13 +176,21 @@ function Deployment.autoDeploy()
     end
     
     -- 随机填充各排（不再限制类型）
-    local allCards = deploymentState.availableCards
+    local allCardIds = {}
+    for _, card in ipairs(deploymentState.availableCards) do
+        table.insert(allCardIds, card.id)
+    end
     
     local function fillRow(rowType, count)
         for i = 1, count do
-            if #allCards > 0 then
-                local randomCard = allCards[math.random(#allCards)]
-                Deployment.addCardToRow(randomCard.id, rowType)
+            if #allCardIds > 0 then
+                local randomIndex = math.random(#allCardIds)
+                local cardId = allCardIds[randomIndex]
+                local success = Deployment.addCardToRow(cardId, rowType)
+                if not success then
+                    -- 如果添加失败（比如满了），停止
+                    break
+                end
             end
         end
     end
