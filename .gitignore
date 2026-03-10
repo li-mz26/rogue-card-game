@@ -1,0 +1,30 @@
+# Compiled Lua sources
+*.luac
+
+# LÖVE2D build files
+*.love
+*.zip
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build directories
+build/
+dist/
+release/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Log files
+*.log
