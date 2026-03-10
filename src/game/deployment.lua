@@ -650,11 +650,8 @@ end
 function Deployment.mousepressed(x, y, button)
     if button ~= 1 then return end
     
-    -- 清空之前的点击区域（每帧重新计算）
-    Deployment.clickAreas = {}
-    
-    -- 重新绘制以获取最新的点击区域
-    -- 这里简化处理，实际应该在update中缓存点击区域
+    -- 使用已经计算好的点击区域（在draw中填充）
+    Deployment.handleClick(x, y)
 end
 
 -- 处理点击（需要在draw之后调用）
