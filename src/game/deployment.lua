@@ -570,12 +570,12 @@ function Deployment.drawCardSelection(screenWidth, screenHeight)
             love.graphics.setFont(chineseFont[8] or love.graphics.newFont(8))
             love.graphics.printf(card.description, panelX + 15, cardY + 32, panelWidth - 30, "left")
             
-            -- 存储点击区域（使用屏幕坐标，不考虑滚动偏移）
+            -- 存储点击区域（cardY 已经是屏幕坐标）
             table.insert(Deployment.clickAreas, {
                 type = "card",
                 cardId = card.id,
                 x = panelX + 10, 
-                y = cardY + cardListOffset,  -- 加回偏移量，使用屏幕坐标
+                y = cardY,  -- cardY 已经是减去偏移量后的屏幕坐标
                 width = panelWidth - 20, 
                 height = cardHeight
             })
