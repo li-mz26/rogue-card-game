@@ -30,8 +30,9 @@ local deploymentState = {
         rear = 3
     },
     
-    -- 当前选中的位置类型（用于放置卡牌）
+    -- 当前选中的位置和具体槽位索引
     selectedPosition = UnitCards.POSITION.VANGUARD,
+    selectedSlotIndex = 1,      -- 选中的具体槽位（1-5）
     
     -- 可用卡牌池（玩家拥有的卡牌）
     availableCards = {},
@@ -109,8 +110,8 @@ end
 -- 布阵操作
 -- ============================================================================
 
--- 添加卡牌到指定排（任何卡牌可以放在任何位置）
-function Deployment.addCardToRow(cardId, rowType)
+-- 添加卡牌到指定排的具体位置（任何卡牌可以放在任何位置）
+function Deployment.addCardToRow(cardId, rowType, slotIndex)
     local card = UnitCards.createInstance(cardId, rowType)
     if not card then return false end
     
@@ -120,16 +121,23 @@ function Deployment.addCardToRow(cardId, rowType)
         return true
     end
     
-    -- 检查是否还有空位
+    -- 获取该排的数据
     local rowTable = Deployment.getRowTable(rowType)
     local maxCount = deploymentState.rowCounts[rowType]
     
-    if #rowTable >= maxCount then
-        print("该排已满")
+    -- 检查索引是否有效
+    if slotIndex < 1 or slotIndex > maxCount then
+        print("无效的槽位索引")
         return false
     end
     
-    table.insert(rowTable, card)
+    -- 如果该位置已有卡牌，先移除
+    if rowTable[slotIndex] then
+        rowTable[slotIndex] = nil
+    end
+    
+    -- 直接设置到指定位置
+    rowTable[slotIndex] = card
     return true
 end
 
@@ -167,10 +175,10 @@ function Deployment.autoDeploy()
     local allCards = UnitCards.getAll()
     if #allCards > 0 then
         local randomCard = allCards[math.random(#allCards)]
-        Deployment.addCardToRow(randomCard.id, UnitCards.POSITION.COMMAND)
+        Deployment.addCardToRow(randomCard.id, UnitCards.POSITION.COMMAND, 1)
     end
     
-    -- 随机填充各排（不再限制类型）
+    -- 随机填充各排（从左到右填充）
     local allCardIds = {}
     for _, card in ipairs(deploymentState.availableCards) do
         table.insert(allCardIds, card.id)
@@ -181,9 +189,8 @@ function Deployment.autoDeploy()
             if #allCardIds > 0 then
                 local randomIndex = math.random(#allCardIds)
                 local cardId = allCardIds[randomIndex]
-                local success = Deployment.addCardToRow(cardId, rowType)
+                local success = Deployment.addCardToRow(cardId, rowType, i)
                 if not success then
-                    -- 如果添加失败（比如满了），停止
                     break
                 end
             end
@@ -195,6 +202,15 @@ function Deployment.autoDeploy()
     fillRow(UnitCards.POSITION.REAR, deploymentState.rowCounts.rear)
 end
 
+-- 计算排中实际卡牌数量（包括分散存储的）
+local function countCardsInRow(rowTable, maxCount)
+    local count = 0
+    for i = 1, maxCount do
+        if rowTable[i] then count = count + 1 end
+    end
+    return count
+end
+
 -- 检查布阵是否完成
 function Deployment.isComplete()
     -- 必须有大营
@@ -203,13 +219,13 @@ function Deployment.isComplete()
     end
     
     -- 每排至少要有1个单位
-    if #deploymentState.vanguardCards == 0 then
+    if countCardsInRow(deploymentState.vanguardCards, deploymentState.rowCounts.vanguard) == 0 then
         return false
     end
-    if #deploymentState.centerCards == 0 then
+    if countCardsInRow(deploymentState.centerCards, deploymentState.rowCounts.center) == 0 then
         return false
     end
-    if #deploymentState.rearCards == 0 then
+    if countCardsInRow(deploymentState.rearCards, deploymentState.rowCounts.rear) == 0 then
         return false
     end
     
@@ -309,11 +325,17 @@ function Deployment.drawFormationPreview(screenWidth, screenHeight)
     }
     
     for _, row in ipairs(rows) do
-        -- 排名称（高亮选中）
-        local isSelected = deploymentState.selectedPosition == row.type
-        love.graphics.setColor(isSelected and 1 or 0.9, isSelected and 0.9 or 0.7, isSelected and 0.5 or 0.3)
+        -- 排名称
+        local isRowSelected = deploymentState.selectedPosition == row.type
+        love.graphics.setColor(isRowSelected and 1 or 0.9, isRowSelected and 0.9 or 0.7, isRowSelected and 0.5 or 0.3)
         love.graphics.setFont(chineseFont[16] or love.graphics.newFont(16))
-        love.graphics.print(row.name .. "(" .. #row.cards .. "/" .. row.count .. ")" .. (isSelected and " <-" or ""), startX, row.y)
+        
+        -- 计算该排实际有多少卡牌（包括nil）
+        local cardCount = 0
+        for j = 1, row.count do
+            if row.cards[j] then cardCount = cardCount + 1 end
+        end
+        love.graphics.print(row.name .. "(" .. cardCount .. "/" .. row.count .. ")", startX, row.y)
         
         -- 数量调整按钮
         Deployment.drawRowCountButtons(startX + 130, row.y, row.key)
@@ -323,22 +345,38 @@ function Deployment.drawFormationPreview(screenWidth, screenHeight)
         for i = 1, row.count do
             local cardX = rowStartX + (i - 1) * (cardWidth + gap)
             local cardY = row.y + 18
+            local isSlotSelected = isRowSelected and deploymentState.selectedSlotIndex == i
+            local hasCard = row.cards[i] ~= nil
             
-            if i <= #row.cards then
+            if hasCard then
+                -- 有卡牌
                 Deployment.drawCard(row.cards[i], cardX, cardY, cardWidth, cardHeight, row.type)
+                -- 如果选中了这个槽位，画一个高亮边框
+                if isSlotSelected then
+                    love.graphics.setColor(1, 0.8, 0.2)
+                    love.graphics.setLineWidth(3)
+                    love.graphics.rectangle("line", cardX - 2, cardY - 2, cardWidth + 4, cardHeight + 4, 5)
+                    love.graphics.setLineWidth(1)
+                end
             else
                 -- 空槽位
-                if isSelected then
-                    love.graphics.setColor(0.25, 0.25, 0.3)
+                if isSlotSelected then
+                    love.graphics.setColor(0.3, 0.3, 0.35)
+                    love.graphics.rectangle("fill", cardX, cardY, cardWidth, cardHeight, 5)
+                    love.graphics.setColor(1, 0.8, 0.2)
+                    love.graphics.setLineWidth(3)
+                    love.graphics.rectangle("line", cardX, cardY, cardWidth, cardHeight, 5)
+                    love.graphics.setLineWidth(1)
+                    love.graphics.setColor(1, 0.8, 0.2)
+                    love.graphics.print("+", cardX + 40, cardY + 50)
                 else
                     love.graphics.setColor(0.15, 0.15, 0.2)
+                    love.graphics.rectangle("fill", cardX, cardY, cardWidth, cardHeight, 5)
+                    love.graphics.setColor(0.3, 0.3, 0.35)
+                    love.graphics.rectangle("line", cardX, cardY, cardWidth, cardHeight, 5)
+                    love.graphics.setColor(0.5, 0.5, 0.5)
+                    love.graphics.print("-", cardX + 40, cardY + 50)
                 end
-                love.graphics.rectangle("fill", cardX, cardY, cardWidth, cardHeight, 5)
-                love.graphics.setColor(0.3, 0.3, 0.35)
-                love.graphics.rectangle("line", cardX, cardY, cardWidth, cardHeight, 5)
-                love.graphics.setColor(0.5, 0.5, 0.5)
-                love.graphics.setFont(chineseFont[12] or love.graphics.newFont(12))
-                love.graphics.print(isSelected and "+" or "-", cardX + 40, cardY + 50)
             end
             
             -- 存储点击区域
@@ -682,8 +720,8 @@ function Deployment.handleClick(x, y)
            and y >= area.y and y <= area.y + area.height then
             
             if area.type == "card" then
-                -- 点击了卡牌，添加到当前选中的位置
-                Deployment.addCardToRow(area.cardId, deploymentState.selectedPosition)
+                -- 点击了卡牌，添加到当前选中的具体槽位
+                Deployment.addCardToRow(area.cardId, deploymentState.selectedPosition, deploymentState.selectedSlotIndex)
                 return true
                 
             elseif area.type == "positionTab" then
@@ -692,23 +730,24 @@ function Deployment.handleClick(x, y)
                 return true
                 
             elseif area.type == "slot" then
-                -- 点击了槽位，选中该位置
+                -- 点击了槽位，选中该位置和具体索引
                 deploymentState.selectedPosition = area.rowType
+                deploymentState.selectedSlotIndex = area.index
                 
                 -- 处理大营特殊逻辑
                 if area.rowType == UnitCards.POSITION.COMMAND then
                     if deploymentState.selectedCommand then
-                        -- 如果已有大营，移除它
+                        -- 如果已有大营，点击移除它
                         deploymentState.selectedCommand = nil
                     end
                     return true
                 end
                 
-                -- 处理其他排
+                -- 处理其他排：只是选中位置，不移除卡牌（除非再次点击已有卡牌的槽位）
                 local rowTable = Deployment.getRowTable(area.rowType)
-                if rowTable and area.index <= #rowTable then
-                    -- 如果有卡牌，移除它
-                    Deployment.removeCardFromRow(area.rowType, area.index)
+                if rowTable and rowTable[area.index] then
+                    -- 如果该位置已有卡牌，点击移除它
+                    rowTable[area.index] = nil
                 end
                 return true
                 
