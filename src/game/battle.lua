@@ -59,6 +59,11 @@ local chineseFont = {}
 -- 布阵数据
 local deploymentData = {}
 
+-- 战力球动画
+local powerBalls = {}  -- 存储所有正在移动的战力球
+local BALL_SPEED = 200  -- 球移动速度（像素/秒）
+local BALL_RADIUS = 6   -- 球半径
+
 -- ============================================================================
 -- 初始化
 -- ============================================================================
@@ -254,6 +259,97 @@ function Battle.createUnit(row, index, card)
 end
 
 -- ============================================================================
+-- 战力球动画
+-- ============================================================================
+
+-- 创建战力球
+-- sourcePos: {x, y} 起始位置
+-- targetPos: {x, y} 目标位置  
+-- power: 代表的战力值
+-- onArrive: 到达回调函数
+function Battle.createPowerBall(sourcePos, targetPos, power, onArrive)
+    local ball = {
+        x = sourcePos.x,
+        y = sourcePos.y,
+        sourceX = sourcePos.x,
+        sourceY = sourcePos.y,
+        targetX = targetPos.x,
+        targetY = targetPos.y,
+        power = power,
+        progress = 0,  -- 0到1的进度
+        onArrive = onArrive,
+        color = {0.9, 0.7, 0.3}  -- 金色
+    }
+    table.insert(powerBalls, ball)
+    return ball
+end
+
+-- 更新战力球
+function Battle.updatePowerBalls(dt)
+    local allArrived = true
+    
+    for i = #powerBalls, 1, -1 do
+        local ball = powerBalls[i]
+        
+        -- 计算移动距离
+        local dx = ball.targetX - ball.sourceX
+        local dy = ball.targetY - ball.sourceY
+        local distance = math.sqrt(dx * dx + dy * dy)
+        
+        -- 更新进度
+        if distance > 0 then
+            ball.progress = ball.progress + (BALL_SPEED * dt) / distance
+        else
+            ball.progress = 1
+        end
+        
+        if ball.progress >= 1 then
+            -- 到达目标
+            ball.progress = 1
+            ball.x = ball.targetX
+            ball.y = ball.targetY
+            
+            -- 执行回调
+            if ball.onArrive then
+                ball.onArrive(ball)
+            end
+            
+            -- 移除球
+            table.remove(powerBalls, i)
+        else
+            -- 更新位置（线性插值）
+            ball.x = ball.sourceX + dx * ball.progress
+            ball.y = ball.sourceY + dy * ball.progress
+            allArrived = false
+        end
+    end
+    
+    return allArrived
+end
+
+-- 绘制战力球
+function Battle.drawPowerBalls()
+    for _, ball in ipairs(powerBalls) do
+        -- 绘制光晕效果
+        love.graphics.setColor(ball.color[1], ball.color[2], ball.color[3], 0.3)
+        love.graphics.circle("fill", ball.x, ball.y, BALL_RADIUS * 2)
+        
+        -- 绘制球体
+        love.graphics.setColor(ball.color[1], ball.color[2], ball.color[3], 0.8)
+        love.graphics.circle("fill", ball.x, ball.y, BALL_RADIUS)
+        
+        -- 绘制高光
+        love.graphics.setColor(1, 1, 1, 0.6)
+        love.graphics.circle("fill", ball.x - 2, ball.y - 2, BALL_RADIUS * 0.4)
+        
+        -- 绘制战力数值
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.setFont(chineseFont[10] or love.graphics.newFont(10))
+        love.graphics.print(tostring(ball.power), ball.x - 5, ball.y - 15)
+    end
+end
+
+-- ============================================================================
 -- 回合流程
 -- ============================================================================
 
@@ -327,56 +423,132 @@ function Battle.autoDeploy()
     end
 end
 
+-- 计算单位在屏幕上的位置
+function Battle.getUnitPosition(playerId, rowType, unitIndex, screenWidth, screenHeight)
+    local startX = screenWidth / 2 - 200
+    local startY = 120
+    local rowHeight = 60
+    local unitWidth = 100
+    local unitGap = 10
+    
+    -- 找到该单位在 FORMATION_ORDER 中的位置
+    for i, formation in ipairs(Battle.FORMATION_ORDER) do
+        if formation[1] == playerId and formation[2] == rowType then
+            local y = startY + (i - 1) * rowHeight
+            local units = players[playerId].units[rowType]
+            local unitCount = #units
+            local rowWidth = unitCount * unitWidth + (unitCount - 1) * unitGap
+            local rowStartX = startX + (400 - rowWidth) / 2
+            
+            if unitIndex >= 1 and unitIndex <= unitCount then
+                local x = rowStartX + (unitIndex - 1) * (unitWidth + unitGap)
+                return {x = x + unitWidth/2, y = y + rowHeight/2}  -- 返回中心点
+            end
+        end
+    end
+    return nil
+end
+
 -- 开始传递阶段
 function Battle.startTransfer()
     currentPhase = "transfer"
     addLog("开始战力传递...")
     
-    -- 传递顺序：殿后 → 中军 → 先锋
     local player = players[activePlayer]
+    local screenWidth = love.graphics.getWidth()
+    local screenHeight = love.graphics.getHeight()
     
+    -- 计算总战力球数量（用于判断动画是否全部完成）
+    local totalBalls = 0
+    local completedBalls = 0
+    
+    -- 传递顺序：殿后 → 中军 → 先锋
     -- 1. 殿后 → 中军
-    local rearToCenter = 0
+    local rearToCenter = {}
     for i = 1, 3 do
         local rearUnit = player.units[Battle.ROW.REAR][i]
-        local transferAmount = rearUnit.currentPower
-        rearUnit.currentPower = 0
-        rearToCenter = rearToCenter + transferAmount
-    end
-    
-    -- 中军接收（平均分配）
-    if rearToCenter > 0 then
-        local perUnit = math.floor(rearToCenter / 3)
-        local remainder = rearToCenter % 3
-        for i = 1, 3 do
-            local amount = perUnit + (i <= remainder and 1 or 0)
-            player.units[Battle.ROW.CENTER][i].currentPower = amount
+        if rearUnit and rearUnit.currentPower > 0 then
+            table.insert(rearToCenter, {
+                fromIndex = i,
+                amount = rearUnit.currentPower
+            })
+            rearUnit.currentPower = 0
         end
-        addLog("殿后向中军传递 " .. rearToCenter .. " 点战力")
     end
     
     -- 2. 中军 → 先锋
-    local centerToVanguard = 0
+    local centerToVanguard = {}
     for i = 1, 3 do
         local centerUnit = player.units[Battle.ROW.CENTER][i]
-        local transferAmount = centerUnit.currentPower
-        centerUnit.currentPower = 0
-        centerToVanguard = centerToVanguard + transferAmount
-    end
-    
-    -- 先锋接收
-    if centerToVanguard > 0 then
-        local perUnit = math.floor(centerToVanguard / 3)
-        local remainder = centerToVanguard % 3
-        for i = 1, 3 do
-            local amount = perUnit + (i <= remainder and 1 or 0)
-            player.units[Battle.ROW.VANGUARD][i].currentPower = amount
+        if centerUnit and centerUnit.currentPower > 0 then
+            table.insert(centerToVanguard, {
+                fromIndex = i,
+                amount = centerUnit.currentPower
+            })
+            centerUnit.currentPower = 0
         end
-        addLog("中军向先锋传递 " .. centerToVanguard .. " 点战力")
     end
     
-    -- 开始攻击阶段
-    Battle.startAttack()
+    -- 创建战力球动画
+    -- 殿后 → 中军
+    for _, transfer in ipairs(rearToCenter) do
+        local sourcePos = Battle.getUnitPosition(activePlayer, Battle.ROW.REAR, transfer.fromIndex, screenWidth, screenHeight)
+        -- 平均分配到中军三个单位
+        for j = 1, 3 do
+            local targetPos = Battle.getUnitPosition(activePlayer, Battle.ROW.CENTER, j, screenWidth, screenHeight)
+            if sourcePos and targetPos then
+                totalBalls = totalBalls + 1
+                Battle.createPowerBall(sourcePos, targetPos, math.floor(transfer.amount / 3), function(ball)
+                    -- 球到达后，增加目标单位的战力
+                    player.units[Battle.ROW.CENTER][j].currentPower = 
+                        (player.units[Battle.ROW.CENTER][j].currentPower or 0) + ball.power
+                    completedBalls = completedBalls + 1
+                end)
+            end
+        end
+    end
+    
+    -- 中军 → 先锋（延迟一点创建，让第一阶段的球先飞）
+    local delay = 0.5  -- 延迟时间（秒）
+    for _, transfer in ipairs(centerToVanguard) do
+        local sourcePos = Battle.getUnitPosition(activePlayer, Battle.ROW.CENTER, transfer.fromIndex, screenWidth, screenHeight)
+        for j = 1, 3 do
+            local targetPos = Battle.getUnitPosition(activePlayer, Battle.ROW.VANGUARD, j, screenWidth, screenHeight)
+            if sourcePos and targetPos then
+                totalBalls = totalBalls + 1
+                -- 使用延迟回调创建球
+                local timer = 0
+                local oldUpdate = Battle.update
+                Battle.update = function(dt)
+                    if oldUpdate then oldUpdate(dt) end
+                    timer = timer + dt
+                    if timer >= delay then
+                        Battle.createPowerBall(sourcePos, targetPos, math.floor(transfer.amount / 3), function(ball)
+                            player.units[Battle.ROW.VANGUARD][j].currentPower = 
+                                (player.units[Battle.ROW.VANGUARD][j].currentPower or 0) + ball.power
+                            completedBalls = completedBalls + 1
+                        end)
+                        Battle.update = oldUpdate  -- 恢复原来的update
+                    end
+                end
+            end
+        end
+    end
+    
+    if #rearToCenter > 0 then
+        addLog("殿后向中军传递战力...")
+    end
+    if #centerToVanguard > 0 then
+        addLog("中军向先锋传递战力...")
+    end
+end
+
+-- 检查传递动画是否完成
+function Battle.checkTransferComplete()
+    if #powerBalls == 0 then
+        -- 所有球都到达，进入攻击阶段
+        Battle.startAttack()
+    end
 end
 
 -- 开始攻击阶段
@@ -486,7 +658,13 @@ end
 -- ============================================================================
 
 function Battle.update(dt)
-    -- 可以在这里添加动画效果
+    -- 更新战力球动画
+    Battle.updatePowerBalls(dt)
+    
+    -- 在传递阶段检查动画是否完成
+    if currentPhase == "transfer" then
+        Battle.checkTransferComplete()
+    end
 end
 
 function Battle.draw()
@@ -617,6 +795,9 @@ function Battle.drawFormation(screenWidth, screenHeight)
         love.graphics.setFont(chineseFont[18])
         love.graphics.print("待分配战力: " .. player.tempPower, 20, 100)
     end
+    
+    -- 绘制战力球动画
+    Battle.drawPowerBalls()
 end
 
 function Battle.drawButtons(screenWidth, screenHeight)
