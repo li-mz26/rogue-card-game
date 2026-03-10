@@ -57,7 +57,7 @@ local battleLog = {}        -- 战斗日志
 local chineseFont = {}
 
 -- 布阵数据
-local deploymentData = {}}
+local deploymentData = {}
 
 -- ============================================================================
 -- 初始化
