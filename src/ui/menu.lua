@@ -13,13 +13,13 @@ local chineseFontSmall = nil
 
 -- 加载中文字体
 local function loadChineseFonts()
-    -- 尝试加载系统自带的中文字体 (.ttf 格式优先)
+    -- 优先加载项目内的字体，然后尝试系统字体
     local fontPaths = {
-        "C:/Windows/Fonts/simhei.ttf",    -- 黑体 (推荐)
-        "C:/Windows/Fonts/simkai.ttf",    -- 楷体
-        "C:/Windows/Fonts/simsun.ttc",    -- 宋体
-        "C:/Windows/Fonts/msyh.ttc",      -- 微软雅黑
-        "C:/Windows/Fonts/msyhbd.ttc",    -- 微软雅黑粗体
+        "assets/fonts/simhei.ttf",        -- 项目内黑体 (推荐)
+        "assets/fonts/simkai.ttf",        -- 项目内楷体
+        "C:/Windows/Fonts/simhei.ttf",    -- 系统黑体
+        "C:/Windows/Fonts/simkai.ttf",    -- 系统楷体
+        "C:/Windows/Fonts/simsun.ttc",    -- 系统宋体
     }
     
     for _, path in ipairs(fontPaths) do
