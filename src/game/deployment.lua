@@ -112,22 +112,32 @@ end
 
 -- 添加卡牌到指定排的具体位置（任何卡牌可以放在任何位置）
 function Deployment.addCardToRow(cardId, rowType, slotIndex)
+    print("Adding card " .. cardId .. " to " .. rowType .. " slot " .. slotIndex)
     local card = UnitCards.createInstance(cardId, rowType)
-    if not card then return false end
+    if not card then 
+        print("Failed to create card instance")
+        return false 
+    end
     
     -- 大营特殊处理（只能有一个）
     if rowType == UnitCards.POSITION.COMMAND then
         deploymentState.selectedCommand = card
+        print("Command set")
         return true
     end
     
     -- 获取该排的数据
     local rowTable = Deployment.getRowTable(rowType)
+    if not rowTable then
+        print("Failed to get row table for " .. rowType)
+        return false
+    end
+    
     local maxCount = deploymentState.rowCounts[rowType]
     
     -- 检查索引是否有效
     if slotIndex < 1 or slotIndex > maxCount then
-        print("无效的槽位索引")
+        print("无效的槽位索引: " .. slotIndex .. " (max: " .. maxCount .. ")")
         return false
     end
     
@@ -138,14 +148,18 @@ function Deployment.addCardToRow(cardId, rowType, slotIndex)
     
     -- 直接设置到指定位置
     rowTable[slotIndex] = card
+    print("Card added successfully")
     return true
 end
 
 -- 从排中移除卡牌
 function Deployment.removeCardFromRow(rowType, index)
     local rowTable = Deployment.getRowTable(rowType)
-    if index >= 1 and index <= #rowTable then
-        table.remove(rowTable, index)
+    if not rowTable then return false end
+    
+    local maxCount = deploymentState.rowCounts[rowType]
+    if index >= 1 and index <= maxCount then
+        rowTable[index] = nil  -- 直接设为nil，不使用table.remove
         return true
     end
     return false
@@ -215,20 +229,29 @@ end
 function Deployment.isComplete()
     -- 必须有大营
     if not deploymentState.selectedCommand then
+        -- print("No command selected")
         return false
     end
+    
+    local vanguardCount = countCardsInRow(deploymentState.vanguardCards, deploymentState.rowCounts.vanguard)
+    local centerCount = countCardsInRow(deploymentState.centerCards, deploymentState.rowCounts.center)
+    local rearCount = countCardsInRow(deploymentState.rearCards, deploymentState.rowCounts.rear)
     
     -- 每排至少要有1个单位
-    if countCardsInRow(deploymentState.vanguardCards, deploymentState.rowCounts.vanguard) == 0 then
+    if vanguardCount == 0 then
+        -- print("No vanguard cards")
         return false
     end
-    if countCardsInRow(deploymentState.centerCards, deploymentState.rowCounts.center) == 0 then
+    if centerCount == 0 then
+        -- print("No center cards")
         return false
     end
-    if countCardsInRow(deploymentState.rearCards, deploymentState.rowCounts.rear) == 0 then
+    if rearCount == 0 then
+        -- print("No rear cards")
         return false
     end
     
+    -- print("Complete! V:" .. vanguardCount .. " C:" .. centerCount .. " R:" .. rearCount)
     return true
 end
 
