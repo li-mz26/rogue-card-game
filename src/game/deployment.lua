@@ -168,10 +168,10 @@ function Deployment.autoDeploy()
     deploymentState.centerCards = {}
     deploymentState.rearCards = {}
     
-    -- 随机选择大营（优先选择君主类型）
-    local monarchCards = UnitCards.getByTag(UnitCards.TAG.MONARCH)
-    if #monarchCards > 0 then
-        local randomCard = monarchCards[math.random(#monarchCards)]
+    -- 随机选择大营
+    local allCards = UnitCards.getAll()
+    if #allCards > 0 then
+        local randomCard = allCards[math.random(#allCards)]
         Deployment.addCardToRow(randomCard.id, UnitCards.POSITION.COMMAND)
     end
     
@@ -478,65 +478,46 @@ function Deployment.drawCardSelection(screenWidth, screenHeight)
     love.graphics.setFont(chineseFont[18] or love.graphics.newFont(18))
     love.graphics.print("可选武将 (点击添加到选中位置)", panelX + 10, panelY + 10)
     
-    -- 按标签分类显示所有卡牌
+    -- 显示所有卡牌（不再分类）
     local cardY = panelY + 40
-    local cardHeight = 60
+    local cardHeight = 55
     local cardGap = 8
     
-    local tags = {
-        { tag = UnitCards.TAG.MONARCH, name = "君主" },
-        { tag = UnitCards.TAG.WARRIOR, name = "武将" },
-        { tag = UnitCards.TAG.STRATEGIST, name = "谋士" },
-        { tag = UnitCards.TAG.ARCHER, name = "弓将" }
-    }
-    
-    for _, tagInfo in ipairs(tags) do
-        -- 标签标题
-        love.graphics.setColor(0.9, 0.7, 0.3)
-        love.graphics.setFont(chineseFont[12] or love.graphics.newFont(12))
-        love.graphics.print(tagInfo.name, panelX + 10, cardY)
-        cardY = cardY + 18
-        
-        -- 该标签的卡牌
-        local cards = UnitCards.getByTag(tagInfo.tag)
-        for _, card in ipairs(cards) do
-            if cardY + cardHeight < panelY + panelHeight - 10 then
-                -- 卡牌背景
-                local rarityColor = UnitCards.getRarityColor(card.rarity)
-                love.graphics.setColor(0.2, 0.2, 0.25)
-                love.graphics.rectangle("fill", panelX + 10, cardY, panelWidth - 20, cardHeight, 3)
-                love.graphics.setColor(rarityColor[1], rarityColor[2], rarityColor[3])
-                love.graphics.rectangle("line", panelX + 10, cardY, panelWidth - 20, cardHeight, 3)
-                
-                -- 卡牌名称
-                love.graphics.setColor(1, 1, 1)
-                love.graphics.setFont(chineseFont[13] or love.graphics.newFont(13))
-                love.graphics.print(card.name, panelX + 15, cardY + 5)
-                
-                -- 称号
-                love.graphics.setColor(0.8, 0.8, 0.6)
-                love.graphics.setFont(chineseFont[10] or love.graphics.newFont(10))
-                love.graphics.print(card.title, panelX + 15, cardY + 22)
-                
-                -- 说明
-                love.graphics.setColor(0.7, 0.7, 0.7)
-                love.graphics.setFont(chineseFont[9] or love.graphics.newFont(9))
-                love.graphics.printf(card.description, panelX + 15, cardY + 38, panelWidth - 30, "left")
-                
-                -- 存储点击区域
-                if not Deployment.clickAreas then Deployment.clickAreas = {} end
-                table.insert(Deployment.clickAreas, {
-                    type = "card",
-                    cardId = card.id,
-                    x = panelX + 10, y = cardY,
-                    width = panelWidth - 20, height = cardHeight
-                })
-                
-                cardY = cardY + cardHeight + cardGap
-            end
+    for _, card in ipairs(deploymentState.availableCards) do
+        if cardY + cardHeight < panelY + panelHeight - 10 then
+            -- 卡牌背景
+            local rarityColor = UnitCards.getRarityColor(card.rarity)
+            love.graphics.setColor(0.2, 0.2, 0.25)
+            love.graphics.rectangle("fill", panelX + 10, cardY, panelWidth - 20, cardHeight, 3)
+            love.graphics.setColor(rarityColor[1], rarityColor[2], rarityColor[3])
+            love.graphics.rectangle("line", panelX + 10, cardY, panelWidth - 20, cardHeight, 3)
+            
+            -- 卡牌名称
+            love.graphics.setColor(1, 1, 1)
+            love.graphics.setFont(chineseFont[13] or love.graphics.newFont(13))
+            love.graphics.print(card.name, panelX + 15, cardY + 5)
+            
+            -- 称号
+            love.graphics.setColor(0.8, 0.8, 0.6)
+            love.graphics.setFont(chineseFont[10] or love.graphics.newFont(10))
+            love.graphics.print(card.title, panelX + 15, cardY + 22)
+            
+            -- 说明
+            love.graphics.setColor(0.7, 0.7, 0.7)
+            love.graphics.setFont(chineseFont[9] or love.graphics.newFont(9))
+            love.graphics.printf(card.description, panelX + 15, cardY + 36, panelWidth - 30, "left")
+            
+            -- 存储点击区域
+            if not Deployment.clickAreas then Deployment.clickAreas = {} end
+            table.insert(Deployment.clickAreas, {
+                type = "card",
+                cardId = card.id,
+                x = panelX + 10, y = cardY,
+                width = panelWidth - 20, height = cardHeight
+            })
+            
+            cardY = cardY + cardHeight + cardGap
         end
-        
-        cardY = cardY + 5
     end
 end
 

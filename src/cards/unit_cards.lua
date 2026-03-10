@@ -1,6 +1,6 @@
 --[[
     历史人物单位卡牌系统
-    每个卡牌代表一个可部署到阵型中的历史人物
+    每个卡牌代表一个可部署到阵型中的历史人�?
     所有卡牌可以放置在任何位置，放置位置决定其效果
 --]]
 
@@ -8,26 +8,18 @@ local UnitCards = {}
 
 -- 卡牌稀有度
 UnitCards.RARITY = {
-    COMMON = "common",      -- 普通
-    UNCOMMON = "uncommon",  -- 稀有
+    COMMON = "common",      -- 普�?
+    UNCOMMON = "uncommon",  -- 稀�?
     RARE = "rare",          -- 史诗
     LEGENDARY = "legendary" -- 传说
 }
 
 -- 位置类型
 UnitCards.POSITION = {
-    COMMAND = "command",    -- 大营（主帅/君主）
+    COMMAND = "command",    -- 大营（主�?君主�?
     VANGUARD = "vanguard",  -- 先锋（前线进攻）
     CENTER = "center",      -- 中军（中间传递）
     REAR = "rear"           -- 殿后（后方支援）
-}
-
--- 武将类型标签（仅用于分类显示，不限制放置位置）
-UnitCards.TAG = {
-    MONARCH = "monarch",    -- 君主
-    WARRIOR = "warrior",    -- 武将
-    STRATEGIST = "strategist", -- 谋士
-    ARCHER = "archer"       -- 弓将
 }
 
 -- 特殊能力类型
@@ -35,25 +27,25 @@ UnitCards.ABILITY = {
     -- 被动能力
     BONUS_ATTACK = "bonus_attack",      -- 攻击加成
     BONUS_DEFENSE = "bonus_defense",    -- 防御加成
-    BONUS_TRANSFER = "bonus_transfer",  -- 传递效率加成
+    BONUS_TRANSFER = "bonus_transfer",  -- 传递效率加�?
     BONUS_GENERATE = "bonus_generate",  -- 战力生成加成
     
-    -- 主动技能
-    CHARGE = "charge",                  -- 冲锋：本回合攻击翻倍
+    -- 主动技�?
+    CHARGE = "charge",                  -- 冲锋：本回合攻击翻�?
     DEFEND = "defend",                  -- 坚守：本回合减少受到伤害
-    AMBUSH = "ambush",                  -- 伏击：偷取敌方战力
-    INSPIRE = "inspire",                -- 鼓舞：相邻单位获得加成
+    AMBUSH = "ambush",                  -- 伏击：偷取敌方战�?
+    INSPIRE = "inspire",                -- 鼓舞：相邻单位获得加�?
 }
 
 -- ============================================================================
--- 卡牌数据库
+-- 卡牌数据�?
 -- ============================================================================
 
 --[[
     所有历史人物卡牌可以放置在任何位置
-    放置位置决定其发挥的作用：
-    - 大营：提供全局加成和生命值
-    - 先锋：提供攻击力，负责输出
+    放置位置决定其发挥的作用�?
+    - 大营：提供全局加成和生命�?
+    - 先锋：提供攻击力，负责输�?
     - 中军：提供传递效率，负责中转
     - 殿后：提供战力生成，负责后勤
 ]]
@@ -67,23 +59,23 @@ UnitCards.DATABASE = {
         tag = UnitCards.TAG.MONARCH,
         rarity = UnitCards.RARITY.RARE,
         description = "仁德之君，能鼓舞全军士气",
-        flavorText = "勿以恶小而为之，勿以善小而不为",
-        -- 不同位置的效果
+        flavorText = "勿以恶小而为之，勿以善小而不�?,
+        -- 不同位置的效�?
         positionEffects = {
             [UnitCards.POSITION.COMMAND] = {
                 hp = 40,
                 abilities = {
-                    { type = UnitCards.ABILITY.BONUS_GENERATE, value = 2, desc = "每回合额外生成2点战力" },
+                    { type = UnitCards.ABILITY.BONUS_GENERATE, value = 2, desc = "每回合额外生�?点战�? },
                     { type = UnitCards.ABILITY.INSPIRE, value = 1, desc = "所有单位攻击力+1" }
                 }
             },
             [UnitCards.POSITION.VANGUARD] = {
                 attack = 2, defense = 2,
-                abilities = { { type = UnitCards.ABILITY.INSPIRE, value = 1, desc = "相邻单位攻击力+1" } }
+                abilities = { { type = UnitCards.ABILITY.INSPIRE, value = 1, desc = "相邻单位攻击�?1" } }
             },
             [UnitCards.POSITION.CENTER] = {
                 attack = 1, defense = 2,
-                abilities = { { type = UnitCards.ABILITY.BONUS_TRANSFER, value = 0.2, desc = "传递效率+20%" } }
+                abilities = { { type = UnitCards.ABILITY.BONUS_TRANSFER, value = 0.2, desc = "传递效�?20%" } }
             },
             [UnitCards.POSITION.REAR] = {
                 attack = 1, defense = 1,
@@ -96,17 +88,17 @@ UnitCards.DATABASE = {
     {
         id = "cao_cao",
         name = "曹操",
-        title = "魏武帝",
+        title = "魏武�?,
         tag = UnitCards.TAG.MONARCH,
         rarity = UnitCards.RARITY.RARE,
-        description = "乱世奸雄，善于用兵",
-        flavorText = "宁教我负天下人，休教天下人负我",
+        description = "乱世奸雄，善于用�?,
+        flavorText = "宁教我负天下人，休教天下人负�?,
         positionEffects = {
             [UnitCards.POSITION.COMMAND] = {
                 hp = 35,
                 abilities = {
-                    { type = UnitCards.ABILITY.BONUS_TRANSFER, value = 0.2, desc = "战力传递效率+20%" },
-                    { type = UnitCards.ABILITY.BONUS_ATTACK, value = 1, desc = "先锋攻击力+1" }
+                    { type = UnitCards.ABILITY.BONUS_TRANSFER, value = 0.2, desc = "战力传递效�?20%" },
+                    { type = UnitCards.ABILITY.BONUS_ATTACK, value = 1, desc = "先锋攻击�?1" }
                 }
             },
             [UnitCards.POSITION.VANGUARD] = {
@@ -115,7 +107,7 @@ UnitCards.DATABASE = {
             },
             [UnitCards.POSITION.CENTER] = {
                 attack = 2, defense = 2,
-                abilities = { { type = UnitCards.ABILITY.AMBUSH, value = 2, desc = "偷取敌方2点战力" } }
+                abilities = { { type = UnitCards.ABILITY.AMBUSH, value = 2, desc = "偷取敌方2点战�? } }
             },
             [UnitCards.POSITION.REAR] = {
                 attack = 2, defense = 1,
@@ -128,11 +120,11 @@ UnitCards.DATABASE = {
     {
         id = "sun_quan",
         name = "孙权",
-        title = "吴大帝",
+        title = "吴大�?,
         tag = UnitCards.TAG.MONARCH,
         rarity = UnitCards.RARITY.RARE,
-        description = "坐断东南，善于守成",
-        flavorText = "生子当如孙仲谋",
+        description = "坐断东南，善于守�?,
+        flavorText = "生子当如孙仲�?,
         positionEffects = {
             [UnitCards.POSITION.COMMAND] = {
                 hp = 45,
@@ -169,7 +161,7 @@ UnitCards.DATABASE = {
             [UnitCards.POSITION.COMMAND] = {
                 hp = 35,
                 abilities = {
-                    { type = UnitCards.ABILITY.BONUS_ATTACK, value = 2, desc = "先锋攻击力+2" },
+                    { type = UnitCards.ABILITY.BONUS_ATTACK, value = 2, desc = "先锋攻击�?2" },
                     { type = UnitCards.ABILITY.INSPIRE, value = 1, desc = "全军士气+1" }
                 }
             },
@@ -183,7 +175,7 @@ UnitCards.DATABASE = {
             },
             [UnitCards.POSITION.REAR] = {
                 attack = 2, defense = 2,
-                abilities = { { type = UnitCards.ABILITY.INSPIRE, value = 2, desc = "全军攻击力+2" } }
+                abilities = { { type = UnitCards.ABILITY.INSPIRE, value = 2, desc = "全军攻击�?2" } }
             }
         }
     },
@@ -192,25 +184,25 @@ UnitCards.DATABASE = {
     {
         id = "zhang_fei",
         name = "张飞",
-        title = "万人敌",
+        title = "万人�?,
         tag = UnitCards.TAG.WARRIOR,
         rarity = UnitCards.RARITY.RARE,
-        description = "勇猛过人，声若巨雷",
-        flavorText = "燕人张飞在此！谁敢与我决一死战？",
+        description = "勇猛过人，声若巨�?,
+        flavorText = "燕人张飞在此！谁敢与我决一死战�?,
         positionEffects = {
             [UnitCards.POSITION.COMMAND] = {
                 hp = 38,
                 abilities = {
-                    { type = UnitCards.ABILITY.BONUS_ATTACK, value = 3, desc = "先锋攻击力+3" }
+                    { type = UnitCards.ABILITY.BONUS_ATTACK, value = 3, desc = "先锋攻击�?3" }
                 }
             },
             [UnitCards.POSITION.VANGUARD] = {
                 attack = 5, defense = 1,
-                abilities = { { type = UnitCards.ABILITY.BONUS_ATTACK, value = 2, desc = "攻击力+2" } }
+                abilities = { { type = UnitCards.ABILITY.BONUS_ATTACK, value = 2, desc = "攻击�?2" } }
             },
             [UnitCards.POSITION.CENTER] = {
                 attack = 4, defense = 1,
-                abilities = { { type = UnitCards.ABILITY.BONUS_ATTACK, value = 1, desc = "攻击力+1" } }
+                abilities = { { type = UnitCards.ABILITY.BONUS_ATTACK, value = 1, desc = "攻击�?1" } }
             },
             [UnitCards.POSITION.REAR] = {
                 attack = 3, defense = 1,
@@ -227,25 +219,25 @@ UnitCards.DATABASE = {
         tag = UnitCards.TAG.WARRIOR,
         rarity = UnitCards.RARITY.RARE,
         description = "一身是胆，单骑救主",
-        flavorText = "吾乃常山赵子龙也！",
+        flavorText = "吾乃常山赵子龙也�?,
         positionEffects = {
             [UnitCards.POSITION.COMMAND] = {
                 hp = 38,
                 abilities = {
-                    { type = UnitCards.ABILITY.AMBUSH, value = 1, desc = "每回合偷取敌方1点战力" }
+                    { type = UnitCards.ABILITY.AMBUSH, value = 1, desc = "每回合偷取敌�?点战�? }
                 }
             },
             [UnitCards.POSITION.VANGUARD] = {
                 attack = 3, defense = 3,
-                abilities = { { type = UnitCards.ABILITY.AMBUSH, value = 2, desc = "偷取敌方2点战力" } }
+                abilities = { { type = UnitCards.ABILITY.AMBUSH, value = 2, desc = "偷取敌方2点战�? } }
             },
             [UnitCards.POSITION.CENTER] = {
                 attack = 2, defense = 3,
-                abilities = { { type = UnitCards.ABILITY.AMBUSH, value = 1, desc = "偷取敌方1点战力" } }
+                abilities = { { type = UnitCards.ABILITY.AMBUSH, value = 1, desc = "偷取敌方1点战�? } }
             },
             [UnitCards.POSITION.REAR] = {
                 attack = 2, defense = 2,
-                abilities = { { type = UnitCards.ABILITY.BONUS_TRANSFER, value = 0.2, desc = "传递效率+20%" } }
+                abilities = { { type = UnitCards.ABILITY.BONUS_TRANSFER, value = 0.2, desc = "传递效�?20%" } }
             }
         }
     },
@@ -257,7 +249,7 @@ UnitCards.DATABASE = {
         title = "古之恶来",
         tag = UnitCards.TAG.WARRIOR,
         rarity = UnitCards.RARITY.UNCOMMON,
-        description = "曹操帐下猛将，力大无穷",
+        description = "曹操帐下猛将，力大无�?,
         flavorText = "主公快走！我来断后！",
         positionEffects = {
             [UnitCards.POSITION.COMMAND] = {
@@ -279,31 +271,31 @@ UnitCards.DATABASE = {
         }
     },
     
-    -- ==================== 诸葛亮 ====================
+    -- ==================== 诸葛�?====================
     {
         id = "zhuge_liang",
-        name = "诸葛亮",
+        name = "诸葛�?,
         title = "卧龙",
         tag = UnitCards.TAG.STRATEGIST,
         rarity = UnitCards.RARITY.LEGENDARY,
-        description = "运筹帷幄，决胜千里",
-        flavorText = "鞠躬尽瘁，死而后已",
+        description = "运筹帷幄，决胜千�?,
+        flavorText = "鞠躬尽瘁，死而后�?,
         positionEffects = {
             [UnitCards.POSITION.COMMAND] = {
                 hp = 32,
                 abilities = {
-                    { type = UnitCards.ABILITY.BONUS_TRANSFER, value = 0.3, desc = "传递效率+30%" },
+                    { type = UnitCards.ABILITY.BONUS_TRANSFER, value = 0.3, desc = "传递效�?30%" },
                     { type = UnitCards.ABILITY.BONUS_GENERATE, value = 1, desc = "战力生成+1" }
                 }
             },
             [UnitCards.POSITION.VANGUARD] = {
                 attack = 2, defense = 2,
-                abilities = { { type = UnitCards.ABILITY.BONUS_TRANSFER, value = 0.2, desc = "传递效率+20%" } }
+                abilities = { { type = UnitCards.ABILITY.BONUS_TRANSFER, value = 0.2, desc = "传递效�?20%" } }
             },
             [UnitCards.POSITION.CENTER] = {
                 attack = 2, defense = 2,
                 abilities = {
-                    { type = UnitCards.ABILITY.BONUS_TRANSFER, value = 0.4, desc = "传递效率+40%" },
+                    { type = UnitCards.ABILITY.BONUS_TRANSFER, value = 0.4, desc = "传递效�?40%" },
                     { type = UnitCards.ABILITY.BONUS_GENERATE, value = 1, desc = "战力生成+1" }
                 }
             },
@@ -318,73 +310,73 @@ UnitCards.DATABASE = {
     {
         id = "zhou_yu",
         name = "周瑜",
-        title = "美周郎",
+        title = "美周�?,
         tag = UnitCards.TAG.STRATEGIST,
         rarity = UnitCards.RARITY.RARE,
-        description = "曲有误，周郎顾",
-        flavorText = "既生瑜，何生亮",
+        description = "曲有误，周郎�?,
+        flavorText = "既生瑜，何生�?,
         positionEffects = {
             [UnitCards.POSITION.COMMAND] = {
                 hp = 33,
                 abilities = {
-                    { type = UnitCards.ABILITY.BONUS_ATTACK, value = 1, desc = "先锋攻击力+1" },
-                    { type = UnitCards.ABILITY.BONUS_TRANSFER, value = 0.15, desc = "传递效率+15%" }
+                    { type = UnitCards.ABILITY.BONUS_ATTACK, value = 1, desc = "先锋攻击�?1" },
+                    { type = UnitCards.ABILITY.BONUS_TRANSFER, value = 0.15, desc = "传递效�?15%" }
                 }
             },
             [UnitCards.POSITION.VANGUARD] = {
                 attack = 3, defense = 1,
-                abilities = { { type = UnitCards.ABILITY.BONUS_ATTACK, value = 1, desc = "相邻单位攻击力+1" } }
+                abilities = { { type = UnitCards.ABILITY.BONUS_ATTACK, value = 1, desc = "相邻单位攻击�?1" } }
             },
             [UnitCards.POSITION.CENTER] = {
                 attack = 2, defense = 2,
-                abilities = { { type = UnitCards.ABILITY.BONUS_ATTACK, value = 1, desc = "相邻单位攻击力+1" } }
+                abilities = { { type = UnitCards.ABILITY.BONUS_ATTACK, value = 1, desc = "相邻单位攻击�?1" } }
             },
             [UnitCards.POSITION.REAR] = {
                 attack = 2, defense = 1,
-                abilities = { { type = UnitCards.ABILITY.INSPIRE, value = 1, desc = "全军攻击力+1" } }
+                abilities = { { type = UnitCards.ABILITY.INSPIRE, value = 1, desc = "全军攻击�?1" } }
             }
         }
     },
     
-    -- ==================== 司马懿 ====================
+    -- ==================== 司马�?====================
     {
         id = "simayi",
-        name = "司马懿",
+        name = "司马�?,
         title = "冢虎",
         tag = UnitCards.TAG.STRATEGIST,
         rarity = UnitCards.RARITY.RARE,
-        description = "老谋深算，隐忍不发",
+        description = "老谋深算，隐忍不�?,
         flavorText = "夫处世之道，亦即应变之术",
         positionEffects = {
             [UnitCards.POSITION.COMMAND] = {
                 hp = 34,
                 abilities = {
-                    { type = UnitCards.ABILITY.AMBUSH, value = 2, desc = "每回合偷取敌方2点战力" }
+                    { type = UnitCards.ABILITY.AMBUSH, value = 2, desc = "每回合偷取敌�?点战�? }
                 }
             },
             [UnitCards.POSITION.VANGUARD] = {
                 attack = 2, defense = 3,
-                abilities = { { type = UnitCards.ABILITY.AMBUSH, value = 2, desc = "偷取敌方2点战力" } }
+                abilities = { { type = UnitCards.ABILITY.AMBUSH, value = 2, desc = "偷取敌方2点战�? } }
             },
             [UnitCards.POSITION.CENTER] = {
                 attack = 2, defense = 3,
-                abilities = { { type = UnitCards.ABILITY.AMBUSH, value = 3, desc = "偷取敌方3点战力" } }
+                abilities = { { type = UnitCards.ABILITY.AMBUSH, value = 3, desc = "偷取敌方3点战�? } }
             },
             [UnitCards.POSITION.REAR] = {
                 attack = 1, defense = 2,
-                abilities = { { type = UnitCards.ABILITY.AMBUSH, value = 1, desc = "偷取敌方1点战力" } }
+                abilities = { { type = UnitCards.ABILITY.AMBUSH, value = 1, desc = "偷取敌方1点战�? } }
             }
         }
     },
     
-    -- ==================== 荀彧 ====================
+    -- ==================== 荀�?====================
     {
         id = "xun_yu",
-        name = "荀彧",
+        name = "荀�?,
         title = "王佐之才",
         tag = UnitCards.TAG.STRATEGIST,
         rarity = UnitCards.RARITY.UNCOMMON,
-        description = "曹操的'张良'",
+        description = "曹操�?张良'",
         flavorText = "秉忠贞之志，守谦退之节",
         positionEffects = {
             [UnitCards.POSITION.COMMAND] = {
@@ -397,7 +389,7 @@ UnitCards.DATABASE = {
             },
             [UnitCards.POSITION.CENTER] = {
                 attack = 1, defense = 3,
-                abilities = { { type = UnitCards.ABILITY.BONUS_TRANSFER, value = 0.2, desc = "传递效率+20%" } }
+                abilities = { { type = UnitCards.ABILITY.BONUS_TRANSFER, value = 0.2, desc = "传递效�?20%" } }
             },
             [UnitCards.POSITION.REAR] = {
                 attack = 1, defense = 2,
@@ -418,48 +410,48 @@ UnitCards.DATABASE = {
         positionEffects = {
             [UnitCards.POSITION.COMMAND] = {
                 hp = 36,
-                abilities = { { type = UnitCards.ABILITY.BONUS_ATTACK, value = 1, desc = "先锋攻击力+1" } }
+                abilities = { { type = UnitCards.ABILITY.BONUS_ATTACK, value = 1, desc = "先锋攻击�?1" } }
             },
             [UnitCards.POSITION.VANGUARD] = {
                 attack = 3, defense = 1,
-                abilities = { { type = UnitCards.ABILITY.BONUS_ATTACK, value = 1, desc = "攻击力+1" } }
+                abilities = { { type = UnitCards.ABILITY.BONUS_ATTACK, value = 1, desc = "攻击�?1" } }
             },
             [UnitCards.POSITION.CENTER] = {
                 attack = 3, defense = 1,
-                abilities = { { type = UnitCards.ABILITY.BONUS_TRANSFER, value = 0.15, desc = "传递效率+15%" } }
+                abilities = { { type = UnitCards.ABILITY.BONUS_TRANSFER, value = 0.15, desc = "传递效�?15%" } }
             },
             [UnitCards.POSITION.REAR] = {
                 attack = 3, defense = 1,
-                abilities = { { type = UnitCards.ABILITY.BONUS_ATTACK, value = 2, desc = "攻击力+2" } }
+                abilities = { { type = UnitCards.ABILITY.BONUS_ATTACK, value = 2, desc = "攻击�?2" } }
             }
         }
     },
     
-    -- ==================== 太史慈 ====================
+    -- ==================== 太史�?====================
     {
         id = "tai_shi_ci",
-        name = "太史慈",
+        name = "太史�?,
         title = "信义笃烈",
         tag = UnitCards.TAG.ARCHER,
         rarity = UnitCards.RARITY.UNCOMMON,
-        description = "猿臂善射，弦不虚发",
+        description = "猿臂善射，弦不虚�?,
         flavorText = "大丈夫生于乱世，当带三尺剑立不世之功",
         positionEffects = {
             [UnitCards.POSITION.COMMAND] = {
                 hp = 35,
-                abilities = { { type = UnitCards.ABILITY.AMBUSH, value = 1, desc = "每回合偷取敌方1点战力" } }
+                abilities = { { type = UnitCards.ABILITY.AMBUSH, value = 1, desc = "每回合偷取敌�?点战�? } }
             },
             [UnitCards.POSITION.VANGUARD] = {
                 attack = 3, defense = 1,
-                abilities = { { type = UnitCards.ABILITY.AMBUSH, value = 2, desc = "偷取敌方2点战力" } }
+                abilities = { { type = UnitCards.ABILITY.AMBUSH, value = 2, desc = "偷取敌方2点战�? } }
             },
             [UnitCards.POSITION.CENTER] = {
                 attack = 3, defense = 0,
-                abilities = { { type = UnitCards.ABILITY.AMBUSH, value = 1, desc = "偷取敌方1点战力" } }
+                abilities = { { type = UnitCards.ABILITY.AMBUSH, value = 1, desc = "偷取敌方1点战�? } }
             },
             [UnitCards.POSITION.REAR] = {
                 attack = 3, defense = 0,
-                abilities = { { type = UnitCards.ABILITY.AMBUSH, value = 3, desc = "偷取敌方3点战力" } }
+                abilities = { { type = UnitCards.ABILITY.AMBUSH, value = 3, desc = "偷取敌方3点战�? } }
             }
         }
     },
@@ -468,7 +460,7 @@ UnitCards.DATABASE = {
     {
         id = "zhang_liao",
         name = "张辽",
-        title = "威震逍遥津",
+        title = "威震逍遥�?,
         tag = UnitCards.TAG.WARRIOR,
         rarity = UnitCards.RARITY.RARE,
         description = "以八百破十万",
@@ -484,7 +476,7 @@ UnitCards.DATABASE = {
             },
             [UnitCards.POSITION.CENTER] = {
                 attack = 3, defense = 2,
-                abilities = { { type = UnitCards.ABILITY.CHARGE, value = 1.3, desc = "传递战力×1.3" } }
+                abilities = { { type = UnitCards.ABILITY.CHARGE, value = 1.3, desc = "传递战力�?.3" } }
             },
             [UnitCards.POSITION.REAR] = {
                 attack = 3, defense = 1,
@@ -501,11 +493,11 @@ UnitCards.DATABASE = {
         tag = UnitCards.TAG.STRATEGIST,
         rarity = UnitCards.RARITY.UNCOMMON,
         description = "继承武侯遗志",
-        flavorText = "臣有一计，可使汉室幽而复明",
+        flavorText = "臣有一计，可使汉室幽而复�?,
         positionEffects = {
             [UnitCards.POSITION.COMMAND] = {
                 hp = 34,
-                abilities = { { type = UnitCards.ABILITY.BONUS_TRANSFER, value = 0.2, desc = "传递效率+20%" } }
+                abilities = { { type = UnitCards.ABILITY.BONUS_TRANSFER, value = 0.2, desc = "传递效�?20%" } }
             },
             [UnitCards.POSITION.VANGUARD] = {
                 attack = 2, defense = 2,
@@ -513,7 +505,7 @@ UnitCards.DATABASE = {
             },
             [UnitCards.POSITION.CENTER] = {
                 attack = 2, defense = 2,
-                abilities = { { type = UnitCards.ABILITY.BONUS_TRANSFER, value = 0.25, desc = "传递效率+25%" } }
+                abilities = { { type = UnitCards.ABILITY.BONUS_TRANSFER, value = 0.25, desc = "传递效�?25%" } }
             },
             [UnitCards.POSITION.REAR] = {
                 attack = 1, defense = 3,
@@ -537,7 +529,7 @@ function UnitCards.getById(id)
     return nil
 end
 
--- 获取指定标签的所有卡牌
+-- 获取指定标签的所有卡�?
 function UnitCards.getByTag(tag)
     local result = {}
     for _, card in ipairs(UnitCards.DATABASE) do
@@ -548,7 +540,7 @@ function UnitCards.getByTag(tag)
     return result
 end
 
--- 获取指定稀有度的所有卡牌
+-- 获取指定稀有度的所有卡�?
 function UnitCards.getByRarity(rarity)
     local result = {}
     for _, card in ipairs(UnitCards.DATABASE) do
@@ -600,7 +592,7 @@ function UnitCards.createInstance(cardId, position)
         instance.defense = effect.defense or 0
         instance.abilities = effect.abilities or {}
     else
-        -- 默认属性
+        -- 默认属�?
         instance.hp = 10
         instance.maxHp = 10
         instance.currentHp = 10
@@ -612,7 +604,7 @@ function UnitCards.createInstance(cardId, position)
     return instance
 end
 
--- 获取位置中文名
+-- 获取位置中文�?
 function UnitCards.getPositionName(position)
     local names = {
         command = "大营",
@@ -623,16 +615,6 @@ function UnitCards.getPositionName(position)
     return names[position] or "未知"
 end
 
--- 获取标签中文名
-function UnitCards.getTagName(tag)
-    local names = {
-        monarch = "君主",
-        warrior = "武将",
-        strategist = "谋士",
-        archer = "弓将"
-    }
-    return names[tag] or "未知"
-end
 
 -- 获取稀有度颜色
 function UnitCards.getRarityColor(rarity)
@@ -646,3 +628,4 @@ function UnitCards.getRarityColor(rarity)
 end
 
 return UnitCards
+
