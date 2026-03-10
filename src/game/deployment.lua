@@ -259,19 +259,19 @@ end
 
 -- 绘制阵型预览
 function Deployment.drawFormationPreview(screenWidth, screenHeight)
-    local startX = 50
-    local startY = 80
-    local cardWidth = 120
-    local cardHeight = 160
-    local gap = 10
+    local startX = 20
+    local startY = 50
+    local cardWidth = 90
+    local cardHeight = 120
+    local gap = 6
     
     -- 绘制大营
     local isCommandSelected = deploymentState.selectedPosition == UnitCards.POSITION.COMMAND
     love.graphics.setColor(isCommandSelected and 1 or 0.9, isCommandSelected and 0.9 or 0.7, isCommandSelected and 0.5 or 0.3)
     love.graphics.setFont(chineseFont[16] or love.graphics.newFont(16))
-    love.graphics.print("大营 (1)" .. (isCommandSelected and " ←" or ""), startX, startY)
+    love.graphics.print("大营" .. (isCommandSelected and " <-" or ""), startX, startY)
     
-    local commandY = startY + 25
+    local commandY = startY + 18
     if deploymentState.selectedCommand then
         Deployment.drawCard(deploymentState.selectedCommand, startX, commandY, cardWidth, cardHeight, UnitCards.POSITION.COMMAND)
     else
@@ -284,7 +284,7 @@ function Deployment.drawFormationPreview(screenWidth, screenHeight)
         love.graphics.rectangle("fill", startX, commandY, cardWidth, cardHeight, 5)
         love.graphics.setColor(0.5, 0.5, 0.5)
         love.graphics.setFont(chineseFont[14] or love.graphics.newFont(14))
-        love.graphics.print(isCommandSelected and "点击右侧卡牌" or "点击选择", startX + 20, commandY + 70)
+        love.graphics.print(isCommandSelected and "选卡牌" or "点击", startX + 20, commandY + 50)
     end
     
     -- 存储大营点击区域
@@ -293,14 +293,14 @@ function Deployment.drawFormationPreview(screenWidth, screenHeight)
         type = "positionTab",
         position = UnitCards.POSITION.COMMAND,
         x = startX, y = startY,
-        width = cardWidth, height = 25
+        width = cardWidth, height = 18
     })
     
     -- 绘制各排
     local rows = {
-        { key = "vanguard", name = "先锋", type = UnitCards.POSITION.VANGUARD, cards = deploymentState.vanguardCards, count = deploymentState.rowCounts.vanguard, y = startY + 200 },
-        { key = "center", name = "中军", type = UnitCards.POSITION.CENTER, cards = deploymentState.centerCards, count = deploymentState.rowCounts.center, y = startY + 380 },
-        { key = "rear", name = "殿后", type = UnitCards.POSITION.REAR, cards = deploymentState.rearCards, count = deploymentState.rowCounts.rear, y = startY + 560 }
+        { key = "vanguard", name = "先锋", type = UnitCards.POSITION.VANGUARD, cards = deploymentState.vanguardCards, count = deploymentState.rowCounts.vanguard, y = startY + 140 },
+        { key = "center", name = "中军", type = UnitCards.POSITION.CENTER, cards = deploymentState.centerCards, count = deploymentState.rowCounts.center, y = startY + 280 },
+        { key = "rear", name = "殿后", type = UnitCards.POSITION.REAR, cards = deploymentState.rearCards, count = deploymentState.rowCounts.rear, y = startY + 420 }
     }
     
     for _, row in ipairs(rows) do
@@ -308,10 +308,10 @@ function Deployment.drawFormationPreview(screenWidth, screenHeight)
         local isSelected = deploymentState.selectedPosition == row.type
         love.graphics.setColor(isSelected and 1 or 0.9, isSelected and 0.9 or 0.7, isSelected and 0.5 or 0.3)
         love.graphics.setFont(chineseFont[16] or love.graphics.newFont(16))
-        love.graphics.print(row.name .. " (" .. #row.cards .. "/" .. row.count .. ")" .. (isSelected and " ←" or ""), startX, row.y)
+        love.graphics.print(row.name .. "(" .. #row.cards .. "/" .. row.count .. ")" .. (isSelected and " <-" or ""), startX, row.y)
         
         -- 数量调整按钮
-        Deployment.drawRowCountButtons(startX + 180, row.y, row.key)
+        Deployment.drawRowCountButtons(startX + 130, row.y, row.key)
         
         -- 存储位置标签点击区域
         table.insert(Deployment.clickAreas, {
@@ -325,7 +325,7 @@ function Deployment.drawFormationPreview(screenWidth, screenHeight)
         local rowStartX = startX
         for i = 1, row.count do
             local cardX = rowStartX + (i - 1) * (cardWidth + gap)
-            local cardY = row.y + 25
+            local cardY = row.y + 18
             
             if i <= #row.cards then
                 Deployment.drawCard(row.cards[i], cardX, cardY, cardWidth, cardHeight, row.type)
@@ -341,7 +341,7 @@ function Deployment.drawFormationPreview(screenWidth, screenHeight)
                 love.graphics.rectangle("line", cardX, cardY, cardWidth, cardHeight, 5)
                 love.graphics.setColor(0.5, 0.5, 0.5)
                 love.graphics.setFont(chineseFont[12] or love.graphics.newFont(12))
-                love.graphics.print(isSelected and "点击添加" or "空位", cardX + 35, cardY + 70)
+                love.graphics.print(isSelected and "+" or "-", cardX + 40, cardY + 50)
             end
             
             -- 存储点击区域
@@ -358,17 +358,16 @@ end
 
 -- 绘制单张卡牌
 function Deployment.drawCard(card, x, y, width, height, slotType)
-    -- 稀有度颜色边框
     local rarityColor = UnitCards.getRarityColor(card.rarity)
     
     -- 卡牌背景
     love.graphics.setColor(0.25, 0.25, 0.3)
-    love.graphics.rectangle("fill", x, y, width, height, 5)
+    love.graphics.rectangle("fill", x, y, width, height, 4)
     
     -- 稀有度边框
     love.graphics.setColor(rarityColor[1], rarityColor[2], rarityColor[3])
     love.graphics.setLineWidth(2)
-    love.graphics.rectangle("line", x, y, width, height, 5)
+    love.graphics.rectangle("line", x, y, width, height, 4)
     love.graphics.setLineWidth(1)
     
     -- 位置类型色块
@@ -380,39 +379,35 @@ function Deployment.drawCard(card, x, y, width, height, slotType)
     }
     local tc = typeColors[slotType] or {0.5, 0.5, 0.5}
     love.graphics.setColor(tc[1], tc[2], tc[3], 0.3)
-    love.graphics.rectangle("fill", x + 2, y + 2, width - 4, 25, 3)
+    love.graphics.rectangle("fill", x + 2, y + 2, width - 4, 18, 2)
     
     -- 卡牌名称
     love.graphics.setColor(1, 1, 1)
-    love.graphics.setFont(chineseFont[14] or love.graphics.newFont(14))
-    love.graphics.print(card.name, x + 5, y + 5)
+    love.graphics.setFont(chineseFont[12] or love.graphics.newFont(12))
+    love.graphics.print(card.name, x + 4, y + 3)
     
     -- 称号
     love.graphics.setColor(0.8, 0.8, 0.6)
-    love.graphics.setFont(chineseFont[11] or love.graphics.newFont(11))
-    love.graphics.print(card.title or "", x + 5, y + 30)
+    love.graphics.setFont(chineseFont[9] or love.graphics.newFont(9))
+    love.graphics.print(card.title or "", x + 4, y + 22)
     
-    -- 属性（根据放置位置的效果）
+    -- 属性
     love.graphics.setColor(0.9, 0.7, 0.3)
-    love.graphics.setFont(chineseFont[12] or love.graphics.newFont(12))
-    local statsY = y + 50
-    if card.hp and card.hp > 0 then
-        love.graphics.print("生命: " .. card.hp, x + 5, statsY)
-        statsY = statsY + 18
-    end
-    if card.attack and card.attack > 0 then
-        love.graphics.print("攻击: " .. card.attack, x + 5, statsY)
-        statsY = statsY + 18
-    end
-    if card.defense and card.defense > 0 then
-        love.graphics.print("防御: " .. card.defense, x + 5, statsY)
+    love.graphics.setFont(chineseFont[10] or love.graphics.newFont(10))
+    local statsY = y + 38
+    local stats = {}
+    if card.hp and card.hp > 0 then table.insert(stats, "HP:" .. card.hp) end
+    if card.attack and card.attack > 0 then table.insert(stats, "ATK:" .. card.attack) end
+    if card.defense and card.defense > 0 then table.insert(stats, "DEF:" .. card.defense) end
+    if #stats > 0 then
+        love.graphics.print(table.concat(stats, " "), x + 4, statsY)
     end
     
     -- 能力简述
     if card.abilities and #card.abilities > 0 then
         love.graphics.setColor(0.6, 0.8, 1)
-        love.graphics.setFont(chineseFont[10] or love.graphics.newFont(10))
-        love.graphics.printf(card.abilities[1].desc, x + 5, y + height - 45, width - 10, "left")
+        love.graphics.setFont(chineseFont[8] or love.graphics.newFont(8))
+        love.graphics.printf(card.abilities[1].desc, x + 4, y + height - 30, width - 8, "left")
     end
 end
 
@@ -554,9 +549,12 @@ function Deployment.drawButtons(screenWidth, screenHeight)
         enabled = canConfirm,
         onClick = function()
             if Deployment.isComplete() then
+                print("Deployment complete! Switching to game...")
                 -- 切换到战斗状态
                 local GameState = require('src.game.gamestate')
                 GameState.switch("game")
+            else
+                print("Deployment not complete yet!")
             end
         end
     })
