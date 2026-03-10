@@ -7,7 +7,48 @@ local Menu = {}
 -- 按钮列表
 local buttons = {}
 
+-- 中文字体
+local chineseFont = nil
+local chineseFontSmall = nil
+
+-- 加载中文字体
+local function loadChineseFonts()
+    -- 尝试加载系统自带的中文字体
+    local fontPaths = {
+        "C:/Windows/Fonts/msyh.ttc",      -- 微软雅黑
+        "C:/Windows/Fonts/msyhbd.ttc",    -- 微软雅黑粗体
+        "C:/Windows/Fonts/simhei.ttf",    -- 黑体
+        "C:/Windows/Fonts/simsun.ttc",    -- 宋体
+        "C:/Windows/Fonts/simkai.ttf",    -- 楷体
+    }
+    
+    for _, path in ipairs(fontPaths) do
+        if love.filesystem.getInfo(path) or io.open(path, "r") then
+            local success, font = pcall(function()
+                return love.graphics.newFont(path, 24)
+            end)
+            if success then
+                chineseFont = font
+                chineseFontSmall = love.graphics.newFont(path, 18)
+                print("成功加载字体: " .. path)
+                return true
+            end
+        end
+    end
+    
+    -- 如果都失败，使用默认字体（中文会显示为方框）
+    chineseFont = love.graphics.newFont(24)
+    chineseFontSmall = love.graphics.newFont(18)
+    print("警告: 未找到中文字体，中文可能显示为方框")
+    return false
+end
+
 function Menu.init()
+    -- 加载字体
+    if not chineseFont then
+        loadChineseFonts()
+    end
+    
     buttons = {}
     
     local screenWidth = love.graphics.getWidth()
@@ -67,7 +108,7 @@ function Menu.draw()
     love.graphics.print(title, (screenWidth - titleWidth) / 2, 150)
     
     -- 按钮
-    love.graphics.setFont(love.graphics.newFont(24))
+    love.graphics.setFont(chineseFont or love.graphics.newFont(24))
     for _, btn in ipairs(buttons) do
         -- 按钮背景
         if btn.hovered then

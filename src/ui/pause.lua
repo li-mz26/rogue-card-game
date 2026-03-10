@@ -6,7 +6,40 @@ local Pause = {}
 
 local buttons = {}
 
+-- 中文字体
+local chineseFont = nil
+
+-- 加载中文字体
+local function loadChineseFonts()
+    local fontPaths = {
+        "C:/Windows/Fonts/msyh.ttc",
+        "C:/Windows/Fonts/msyhbd.ttc",
+        "C:/Windows/Fonts/simhei.ttf",
+        "C:/Windows/Fonts/simsun.ttc",
+        "C:/Windows/Fonts/simkai.ttf",
+    }
+    
+    for _, path in ipairs(fontPaths) do
+        if io.open(path, "r") then
+            local success, font = pcall(function()
+                return love.graphics.newFont(path, 24)
+            end)
+            if success then
+                chineseFont = font
+                return true
+            end
+        end
+    end
+    
+    chineseFont = love.graphics.newFont(24)
+    return false
+end
+
 function Pause.init()
+    if not chineseFont then
+        loadChineseFonts()
+    end
+    
     buttons = {}
     
     local screenWidth = love.graphics.getWidth()
@@ -66,7 +99,7 @@ function Pause.draw()
     love.graphics.print(title, (screenWidth - titleWidth) / 2, 200)
     
     -- 按钮
-    love.graphics.setFont(love.graphics.newFont(24))
+    love.graphics.setFont(chineseFont or love.graphics.newFont(24))
     for _, btn in ipairs(buttons) do
         if btn.hovered then
             love.graphics.setColor(0.4, 0.6, 0.8)

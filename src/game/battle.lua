@@ -10,7 +10,42 @@ local enemies = {}
 local cards = {}
 local currentTurn = 1
 
+-- 中文字体
+local chineseFont = {}
+
+-- 加载中文字体
+local function loadChineseFonts()
+    local fontPaths = {
+        "C:/Windows/Fonts/msyh.ttc",
+        "C:/Windows/Fonts/msyhbd.ttc",
+        "C:/Windows/Fonts/simhei.ttf",
+        "C:/Windows/Fonts/simsun.ttc",
+        "C:/Windows/Fonts/simkai.ttf",
+    }
+    
+    for _, path in ipairs(fontPaths) do
+        if io.open(path, "r") then
+            local success = pcall(function()
+                chineseFont[10] = love.graphics.newFont(path, 10)
+                chineseFont[12] = love.graphics.newFont(path, 12)
+                chineseFont[16] = love.graphics.newFont(path, 16)
+                chineseFont[18] = love.graphics.newFont(path, 18)
+                chineseFont[20] = love.graphics.newFont(path, 20)
+            end)
+            if success then
+                return true
+            end
+        end
+    end
+    return false
+end
+
 function Battle.init()
+    -- 加载字体
+    if not chineseFont[16] then
+        loadChineseFonts()
+    end
+    
     print("初始化战斗...")
     
     -- 初始化玩家
@@ -128,7 +163,7 @@ function Battle.drawPlayer(screenWidth, screenHeight)
     
     -- 玩家名称
     love.graphics.setColor(1, 1, 1)
-    love.graphics.setFont(love.graphics.newFont(20))
+    love.graphics.setFont(chineseFont[20] or love.graphics.newFont(20))
     love.graphics.print("玩家", px, py)
     
     -- HP条
@@ -142,6 +177,7 @@ function Battle.drawPlayer(screenWidth, screenHeight)
     
     -- 能量
     love.graphics.setColor(0.2, 0.5, 0.8)
+    love.graphics.setFont(chineseFont[16] or love.graphics.newFont(16))
     love.graphics.print("能量: " .. player.energy .. "/" .. player.maxEnergy, px, py + 65)
 end
 
@@ -158,7 +194,7 @@ function Battle.drawEnemies(screenWidth, screenHeight)
         
         -- 敌人信息
         love.graphics.setColor(1, 1, 1)
-        love.graphics.setFont(love.graphics.newFont(18))
+        love.graphics.setFont(chineseFont[18] or love.graphics.newFont(18))
         love.graphics.print(enemy.name, x + 10, y + 10)
         
         -- HP条
@@ -172,6 +208,7 @@ function Battle.drawEnemies(screenWidth, screenHeight)
         
         -- 意图
         love.graphics.setColor(0.9, 0.7, 0.3)
+        love.graphics.setFont(chineseFont[16] or love.graphics.newFont(16))
         love.graphics.print("意图: " .. enemy.intent, x + 10, y + 70)
     end
 end
@@ -203,12 +240,12 @@ function Battle.drawHand(screenWidth, screenHeight)
         
         -- 卡牌名称
         love.graphics.setColor(1, 1, 1)
-        love.graphics.setFont(love.graphics.newFont(12))
+        love.graphics.setFont(chineseFont[12] or love.graphics.newFont(12))
         love.graphics.print(card.name, x + 5, y + 35)
         
         -- 描述
         love.graphics.setColor(0.8, 0.8, 0.8)
-        love.graphics.setFont(love.graphics.newFont(10))
+        love.graphics.setFont(chineseFont[10] or love.graphics.newFont(10))
         love.graphics.printf(card.description, x + 5, y + 60, cardWidth - 10, "left")
     end
 end
@@ -216,7 +253,7 @@ end
 function Battle.drawUI(screenWidth, screenHeight)
     -- 回合数
     love.graphics.setColor(1, 1, 1)
-    love.graphics.setFont(love.graphics.newFont(16))
+    love.graphics.setFont(chineseFont[16] or love.graphics.newFont(16))
     love.graphics.print("回合 " .. currentTurn, 20, 20)
     
     -- 结束回合按钮
@@ -225,6 +262,7 @@ function Battle.drawUI(screenWidth, screenHeight)
     love.graphics.setColor(0.8, 0.6, 0.3)
     love.graphics.rectangle("fill", btnX, btnY, 120, 40, 5)
     love.graphics.setColor(0, 0, 0)
+    love.graphics.setFont(chineseFont[16] or love.graphics.newFont(16))
     love.graphics.print("结束回合", btnX + 25, btnY + 10)
 end
 
