@@ -81,20 +81,22 @@ function GameState.draw()
 end
 
 function GameState.switch(state)
-    if GameState.STATE[state:upper()] then
+    local stateUpper = state:upper()
+    if GameState.STATE[stateUpper] then
         -- 退出当前状态
         if stateHandlers[currentState] and stateHandlers[currentState].exit then
             stateHandlers[currentState].exit()
         end
         
-        currentState = state
+        -- 使用标准化的状态名（小写）
+        currentState = GameState.STATE[stateUpper]
         
         -- 进入新状态
         if stateHandlers[currentState] and stateHandlers[currentState].init then
             stateHandlers[currentState].init()
         end
         
-        print("切换到状态: " .. state)
+        print("切换到状态: " .. currentState)
     else
         error("未知状态: " .. state)
     end

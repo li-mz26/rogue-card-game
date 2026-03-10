@@ -5,6 +5,9 @@
 
 local Battle = {}
 
+-- 游戏状态管理器（延迟加载）
+local GameState = nil
+
 -- ============================================================================
 -- 游戏常量
 -- ============================================================================
@@ -330,22 +333,26 @@ end
 -- 绘制战力球
 function Battle.drawPowerBalls()
     for _, ball in ipairs(powerBalls) do
-        -- 绘制光晕效果
-        love.graphics.setColor(ball.color[1], ball.color[2], ball.color[3], 0.3)
+        local r, g, b = ball.color[1], ball.color[2], ball.color[3]
+        
+        -- 绘制光晕效果（使用球的颜色）
+        love.graphics.setColor(r, g, b, 0.3)
         love.graphics.circle("fill", ball.x, ball.y, BALL_RADIUS * 2)
         
         -- 绘制球体
-        love.graphics.setColor(ball.color[1], ball.color[2], ball.color[3], 0.8)
+        love.graphics.setColor(r, g, b, 0.9)
         love.graphics.circle("fill", ball.x, ball.y, BALL_RADIUS)
         
         -- 绘制高光
-        love.graphics.setColor(1, 1, 1, 0.6)
+        love.graphics.setColor(1, 1, 1, 0.7)
         love.graphics.circle("fill", ball.x - 2, ball.y - 2, BALL_RADIUS * 0.4)
         
         -- 绘制战力数值
         love.graphics.setColor(1, 1, 1)
         love.graphics.setFont(chineseFont[10] or love.graphics.newFont(10))
-        love.graphics.print(tostring(ball.power), ball.x - 5, ball.y - 15)
+        local text = tostring(ball.power)
+        local textWidth = (chineseFont[10] or love.graphics.newFont(10)):getWidth(text)
+        love.graphics.print(text, ball.x - textWidth/2, ball.y - 18)
     end
 end
 
@@ -358,16 +365,33 @@ function Battle.startTurn()
     
     -- 阶段 1: 准备阶段，等待玩家点击开始
     currentPhase = "ready"
+    
+    if TEST_MODE then
+        roundCounter = roundCounter + 1
+        print("[TEST] startTurn() called - roundCounter=" .. roundCounter .. ", activePlayer=" .. activePlayer .. ", turn=" .. currentTurn)
+    end
+    
     addLog(player.name .. " 回合准备就绪，点击'开始回合'执行战力传递")
 end
 
 -- 玩家点击开始回合按钮
 function Battle.startRound()
+    if TEST_MODE then
+        print("[TEST] startRound() called - currentPhase=" .. tostring(currentPhase))
+    end
+    
     if currentPhase ~= "ready" then
+        if TEST_MODE then
+            print("[TEST] startRound() SKIPPED - not in ready phase")
+        end
         return
     end
     
     local player = players[activePlayer]
+    
+    if TEST_MODE then
+        print("[TEST] startRound() proceeding for player " .. activePlayer)
+    end
     
     -- 开始传递链（大营→殿后→中军→先锋→敌方大营）
     Battle.startTransfer()
@@ -402,61 +426,160 @@ end
 
 -- 获取大营位置
 function Battle.getCommandPosition(playerId, screenWidth, screenHeight)
-    return Battle.getUnitPosition(playerId, Battle.ROW.COMMAND, 1, screenWidth, screenHeight)
+    -- 大营是单独存储的，不在 units 表中，需要特殊处理
+    local startX = screenWidth / 2 - 200
+    local startY = 120
+    local rowHeight = 60
+    
+    -- 找到大营在 FORMATION_ORDER 中的位置
+    for i, formation in ipairs(Battle.FORMATION_ORDER) do
+        if formation[1] == playerId and formation[2] == Battle.ROW.COMMAND then
+            local y = startY + (i - 1) * rowHeight
+            -- 大营在行中央
+            return {x = startX + 200, y = y + rowHeight/2}
+        end
+    end
+    return nil
+end
+
+-- 战力传递链状态
+local transferChains = {}  -- 跟踪每路的传递状态
+
+-- 创建带有颜色渐变的战力球
+function Battle.createColoredPowerBall(sourcePos, targetPos, power, color, onArrive)
+    local ball = {
+        x = sourcePos.x,
+        y = sourcePos.y,
+        sourceX = sourcePos.x,
+        sourceY = sourcePos.y,
+        targetX = targetPos.x,
+        targetY = targetPos.y,
+        power = power,
+        progress = 0,
+        onArrive = onArrive,
+        color = color or {0.9, 0.7, 0.3}  -- 默认金色
+    }
+    table.insert(powerBalls, ball)
+    return ball
 end
 
 -- 开始完整的战力传递链
+-- 传递路线: 大营 → 殿后 → 中军 → 先锋 → 敌方大营
 function Battle.startTransfer()
     currentPhase = "transfer"
-    addLog("开始战力传递...")
+    transferStartTime = love.timer.getTime()
+    transferChains = {}  -- 重置传递链状态
     
+    -- 先获取玩家数据
     local player = players[activePlayer]
     local defender = players[activePlayer == 1 and 2 or 1]
     local screenWidth = love.graphics.getWidth()
     local screenHeight = love.graphics.getHeight()
     
+    if TEST_MODE then
+        print("[TEST] startTransfer() called - phase set to transfer")
+    end
+    
+    addLog("开始战力传递...")
+    addLog(player.name .. "的大营正在生成战力...")
+    
     -- 总战力（大营生成的）
     local totalPower = player.basePowerGeneration
     
-    print("Total power to transfer: " .. totalPower)
-    
-    -- 创建传递链 - 简化为一步传递：大营 → 敌方大营
-    -- 实际游戏中应该分步传递，但先确保基本功能正常
-    addLog("大营发起攻击！")
+    if TEST_MODE then
+        print("[TEST] Player " .. activePlayer .. " totalPower=" .. totalPower .. ", defender HP=" .. defender.commandHp)
+    end
     
     local commandPos = Battle.getCommandPosition(activePlayer, screenWidth, screenHeight)
-    local enemyCommandPos = Battle.getCommandPosition(activePlayer == 1 and 2 or 1, screenWidth, screenHeight)
     
-    if commandPos and enemyCommandPos then
-        -- 创建3个攻击球（代表3路进攻）
-        for i = 1, 3 do
-            local attackPower = math.floor(totalPower / 3) + (i <= (totalPower % 3) and 1 or 0)
-            -- 稍微偏移位置，让3个球分开
-            local offsetX = (i - 2) * 30
-            local startPos = {x = commandPos.x + offsetX, y = commandPos.y}
-            local endPos = {x = enemyCommandPos.x + offsetX, y = enemyCommandPos.y}
+    if not commandPos then
+        print("[ERROR] Failed to get command position")
+        addLog("[ERROR] 无法获取大营位置")
+        Battle.endTurn()
+        return
+    end
+    
+    -- 为3路分别创建传递链
+    -- 每路：大营 → 殿后单位 → 中军单位 → 先锋单位 → 敌方大营
+    for lane = 1, 3 do
+        transferChains[lane] = { active = true, currentStage = "command" }
+        
+        -- 分配战力（尽量平均分配到3路）
+        local lanePower = math.floor(totalPower / 3) + (lane <= (totalPower % 3) and 1 or 0)
+        
+        if lanePower > 0 then
+            -- 阶段1: 大营 → 殿后
+            local rearPos = Battle.getUnitPosition(activePlayer, Battle.ROW.REAR, lane, screenWidth, screenHeight)
             
-            Battle.createPowerBall(startPos, endPos, attackPower, function(ball)
-                -- 球到达敌方大营，造成伤害
-                local damage = ball.power
-                defender.commandHp = defender.commandHp - damage
-                addLog(player.name .. " 造成 " .. damage .. " 点伤害！")
-            end)
+            if rearPos then
+                -- 大营发出金色球
+                Battle.createColoredPowerBall(commandPos, rearPos, lanePower, {0.9, 0.7, 0.3}, function(ball)
+                    -- 阶段2: 殿后 → 中军
+                    local centerPos = Battle.getUnitPosition(activePlayer, Battle.ROW.CENTER, lane, screenWidth, screenHeight)
+                    if centerPos then
+                        -- 殿后发出淡金色球
+                        Battle.createColoredPowerBall(rearPos, centerPos, ball.power, {0.85, 0.75, 0.4}, function(cBall)
+                            -- 阶段3: 中军 → 先锋
+                            local vanguardPos = Battle.getUnitPosition(activePlayer, Battle.ROW.VANGUARD, lane, screenWidth, screenHeight)
+                            if vanguardPos then
+                                -- 中军发出橙色球
+                                Battle.createColoredPowerBall(centerPos, vanguardPos, cBall.power, {0.9, 0.6, 0.2}, function(vBall)
+                                    -- 阶段4: 先锋 → 敌方大营
+                                    local enemyCommandPos = Battle.getCommandPosition(activePlayer == 1 and 2 or 1, screenWidth, screenHeight)
+                                    if enemyCommandPos then
+                                        -- 先锋发出红色球（攻击）
+                                        Battle.createColoredPowerBall(vanguardPos, enemyCommandPos, vBall.power, {0.9, 0.3, 0.2}, function(aBall)
+                                            -- 攻击敌方大营
+                                            defender.commandHp = defender.commandHp - aBall.power
+                                            addLog("第" .. lane .. "路造成 " .. aBall.power .. " 点伤害！")
+                                            transferChains[lane].active = false
+                                        end)
+                                    else
+                                        transferChains[lane].active = false
+                                    end
+                                end)
+                            else
+                                transferChains[lane].active = false
+                            end
+                        end)
+                    else
+                        transferChains[lane].active = false
+                    end
+                end)
+            else
+                transferChains[lane].active = false
+            end
+        else
+            transferChains[lane].active = false
         end
-    else
-        print("Failed to get positions: commandPos=" .. tostring(commandPos) .. ", enemyCommandPos=" .. tostring(enemyCommandPos))
+    end
+    
+    if TEST_MODE then
+        print("[TEST] Total powerBalls created: " .. #powerBalls)
     end
 end
 
 -- 检查传递动画是否完成
 function Battle.checkTransferComplete()
+    if TEST_MODE and #powerBalls > 0 then
+        print("[TEST] checkTransferComplete() - " .. #powerBalls .. " balls still active")
+    end
+    
     if #powerBalls == 0 then
+        local elapsed = love.timer.getTime() - transferStartTime
+        if TEST_MODE then
+            print("[TEST] All balls arrived! elapsed=" .. elapsed .. "s")
+        end
+        
         -- 所有球都到达，检查是否胜利
         local defender = players[activePlayer == 1 and 2 or 1]
         if defender.commandHp <= 0 then
             addLog(defender.name .. " 大营被攻破！")
             addLog(players[activePlayer].name .. " 获得胜利！")
             currentPhase = "victory"
+            if TEST_MODE then
+                print("[TEST] VICTORY!")
+            end
         else
             addLog(defender.name .. " 大营剩余生命值: " .. defender.commandHp)
             -- 回合结束，切换玩家
@@ -467,12 +590,23 @@ end
 
 -- 回合结束
 function Battle.endTurn()
+    if TEST_MODE then
+        print("[TEST] endTurn() called - was player " .. activePlayer .. ", turn=" .. currentTurn)
+    end
+    
+    -- 立即切换到等待阶段，防止重复触发
+    currentPhase = "waiting"
+    
     -- 切换玩家
     activePlayer = (activePlayer == 1) and 2 or 1
     
     -- 如果两个玩家都行动过，进入下一回合
     if activePlayer == 1 then
         currentTurn = currentTurn + 1
+    end
+    
+    if TEST_MODE then
+        print("[TEST] endTurn() - now player " .. activePlayer .. ", turn=" .. currentTurn)
     end
     
     addLog("---")
@@ -482,9 +616,14 @@ function Battle.endTurn()
     local timer = 0
     local oldUpdate = Battle.update
     Battle.update = function(dt)
-        if oldUpdate then oldUpdate(dt) end
+        -- 延迟期间只更新球动画，不检查完成状态
+        Battle.updatePowerBalls(dt)
+        
         timer = timer + dt
         if timer >= 1.0 then  -- 延迟1秒
+            if TEST_MODE then
+                print("[TEST] Delay complete, calling startTurn()")
+            end
             Battle.startTurn()
             Battle.update = oldUpdate
         end
@@ -517,6 +656,8 @@ function loadChineseFonts()
     
     for _, path in ipairs(fontPaths) do
         local success = pcall(function()
+            chineseFont[9] = love.graphics.newFont(path, 9)
+            chineseFont[10] = love.graphics.newFont(path, 10)
             chineseFont[12] = love.graphics.newFont(path, 12)
             chineseFont[14] = love.graphics.newFont(path, 14)
             chineseFont[16] = love.graphics.newFont(path, 16)
@@ -532,6 +673,8 @@ function loadChineseFonts()
     
     -- 如果都失败了，使用默认字体（只创建一次）
     print("Warning: Could not load Chinese fonts, using default")
+    chineseFont[9] = love.graphics.newFont(9)
+    chineseFont[10] = love.graphics.newFont(10)
     chineseFont[12] = love.graphics.newFont(12)
     chineseFont[14] = love.graphics.newFont(14)
     chineseFont[16] = love.graphics.newFont(16)
@@ -545,6 +688,9 @@ end
 -- 更新和绘制
 -- ============================================================================
 
+-- 调试计数器
+local debugFrameCounter = 0
+
 function Battle.update(dt)
     -- 更新战力球动画
     Battle.updatePowerBalls(dt)
@@ -552,6 +698,15 @@ function Battle.update(dt)
     -- 在传递阶段检查动画是否完成
     if currentPhase == "transfer" then
         Battle.checkTransferComplete()
+    end
+    
+    -- 测试模式：每60帧打印一次状态
+    if TEST_MODE then
+        debugFrameCounter = debugFrameCounter + 1
+        if debugFrameCounter >= 300 then  -- 每5秒（约300帧）
+            debugFrameCounter = 0
+            print("[TEST] Status: turn=" .. currentTurn .. ", phase=" .. currentPhase .. ", activePlayer=" .. activePlayer .. ", powerBalls=" .. #powerBalls)
+        end
     end
 end
 
@@ -574,6 +729,7 @@ function Battle.draw()
     local phaseText = {
         idle = "等待中",
         ready = "准备就绪",
+        waiting = "回合切换中",
         generate = "生成阶段",
         deploy = "部署阶段",
         transfer = "传递阶段",
@@ -620,40 +776,109 @@ function Battle.drawFormation(screenWidth, screenHeight)
         local rowWidth = #units * unitWidth + (#units - 1) * unitGap
         local rowStartX = startX + (400 - rowWidth) / 2
         
-        for j, unit in ipairs(units) do
-            local x = rowStartX + (j - 1) * (unitWidth + unitGap)
+        -- 如果是大营排，特殊处理（显示大营指挥官）
+        if rowType == Battle.ROW.COMMAND then
+            -- 大营单独显示在中央
+            local commandX = startX + 150
+            local commandWidth = 100
             
-            -- 单位背景
+            -- 大营背景（更华丽的颜色）
             if playerId == 1 then
-                love.graphics.setColor(0.3, 0.5, 0.4)
+                love.graphics.setColor(0.4, 0.6, 0.5)  -- 玩家绿色（更亮）
             else
-                love.graphics.setColor(0.5, 0.3, 0.3)
+                love.graphics.setColor(0.6, 0.4, 0.4)  -- 敌人红色（更亮）
             end
-            love.graphics.rectangle("fill", x, y + 5, unitWidth, rowHeight - 15, 3)
+            love.graphics.rectangle("fill", commandX, y + 5, commandWidth, rowHeight - 15, 5)
             
-            -- 单位边框
-            if playerId == activePlayer and rowType == Battle.ROW.REAR and currentPhase == "deploy" then
-                love.graphics.setColor(0.9, 0.9, 0.3)  -- 可交互高亮
+            -- 大营边框（金色）
+            love.graphics.setColor(0.9, 0.7, 0.3)
+            love.graphics.setLineWidth(2)
+            love.graphics.rectangle("line", commandX, y + 5, commandWidth, rowHeight - 15, 5)
+            love.graphics.setLineWidth(1)
+            
+            -- 大营名称/指挥官名称
+            love.graphics.setFont(chineseFont[12] or love.graphics.newFont(12))
+            
+            local commandName
+            if player.command and player.command.name then
+                commandName = player.command.name
+                love.graphics.setColor(0.9, 0.9, 0.4)
             else
+                commandName = "大营"
+                love.graphics.setColor(1, 1, 1)
+            end
+            
+            -- 截断长名称
+            if #commandName > 5 then
+                commandName = string.sub(commandName, 1, 4) .. ".."
+            end
+            
+            love.graphics.print("★ " .. commandName, commandX + 8, y + 8)
+            
+            -- 显示HP标签
+            love.graphics.setFont(chineseFont[9] or love.graphics.newFont(9))
+            love.graphics.setColor(0.6, 0.8, 0.6)
+            love.graphics.print("HP: " .. player.commandHp .. "/" .. player.maxCommandHp, commandX + 10, y + 25)
+        else
+            -- 普通单位排（殿后、中军、先锋）
+            for j, unit in ipairs(units) do
+                local x = rowStartX + (j - 1) * (unitWidth + unitGap)
+                
+                -- 单位背景
+                if playerId == 1 then
+                    love.graphics.setColor(0.3, 0.5, 0.4)
+                else
+                    love.graphics.setColor(0.5, 0.3, 0.3)
+                end
+                love.graphics.rectangle("fill", x, y + 5, unitWidth, rowHeight - 15, 3)
+                
+                -- 单位边框
+                if playerId == activePlayer and rowType == Battle.ROW.REAR and currentPhase == "deploy" then
+                    love.graphics.setColor(0.9, 0.9, 0.3)  -- 可交互高亮
+                else
+                    love.graphics.setColor(0.6, 0.6, 0.6)
+                end
+                love.graphics.rectangle("line", x, y + 5, unitWidth, rowHeight - 15, 3)
+                
+                -- 单位名称：优先显示人物名称，其次显示位置
+                love.graphics.setColor(1, 1, 1)
+                love.graphics.setFont(chineseFont[12] or love.graphics.newFont(12))
+                
+                local displayName
+                if unit.card and unit.card.name then
+                    -- 有卡牌时显示人物名称
+                    displayName = unit.card.name
+                elseif unit.name then
+                    -- 备用：显示单位保存的名称
+                    displayName = unit.name
+                else
+                    -- 默认：显示位置
+                    displayName = Battle.ROW_NAME[rowType] .. j
+                end
+                
+                -- 截断长名称以适应显示区域
+                if #displayName > 6 then
+                    displayName = string.sub(displayName, 1, 5) .. ".."
+                end
+                
+                love.graphics.print(displayName, x + 5, y + 8)
+                
+                -- 显示位置标签（小字体，在人物名称下方）
+                love.graphics.setFont(chineseFont[9] or love.graphics.newFont(9))
                 love.graphics.setColor(0.6, 0.6, 0.6)
+                love.graphics.print(Battle.ROW_NAME[rowType] .. j, x + 5, y + 23)
+                
+                -- 战力值
+                local currentPower = unit.currentPower or 0
+                if currentPower > 0 then
+                    love.graphics.setColor(0.9, 0.7, 0.3)
+                    love.graphics.setFont(chineseFont[10] or love.graphics.newFont(10))
+                    love.graphics.print("战力:" .. currentPower, x + 5, y + 36)
+                end
+                
+                -- 存储点击区域（用于交互）
+                unit.clickArea = {x = x, y = y + 5, width = unitWidth, height = rowHeight - 15}
             end
-            love.graphics.rectangle("line", x, y + 5, unitWidth, rowHeight - 15, 3)
-            
-            -- 单位名称
-            love.graphics.setColor(1, 1, 1)
-            love.graphics.setFont(chineseFont[12])
-            local name = (rowType == Battle.ROW.COMMAND) and "大营" or (Battle.ROW_NAME[rowType] .. j)
-            love.graphics.print(name, x + 5, y + 8)
-            
-            -- 战力值
-            local currentPower = unit.currentPower or 0
-            if currentPower > 0 then
-                love.graphics.setColor(0.9, 0.7, 0.3)
-                love.graphics.print("战力:" .. currentPower, x + 5, y + 25)
-            end
-            
-            -- 存储点击区域（用于交互）
-            unit.clickArea = {x = x, y = y + 5, width = unitWidth, height = rowHeight - 15}
         end
     end
     
@@ -689,6 +914,13 @@ function Battle.drawFormation(screenWidth, screenHeight)
     Battle.drawPowerBalls()
 end
 
+function Battle.returnToMenu()
+    if not GameState then
+        GameState = require('src.game.gamestate')
+    end
+    GameState.switch("MENU")
+end
+
 function Battle.drawButtons(screenWidth, screenHeight)
     local buttons = {}
     
@@ -702,6 +934,16 @@ function Battle.drawButtons(screenWidth, screenHeight)
             width = 120,
             height = 50,
             onClick = function() Battle.startRound() end
+        })
+    elseif currentPhase == "victory" then
+        -- 战斗结束后的返回按钮
+        table.insert(buttons, {
+            text = "返回主菜单",
+            x = screenWidth / 2 - 70,
+            y = screenHeight - 100,
+            width = 140,
+            height = 50,
+            onClick = function() Battle.returnToMenu() end
         })
     end
     
