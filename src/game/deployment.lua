@@ -291,13 +291,14 @@ function Deployment.drawFormationPreview(screenWidth, screenHeight)
         love.graphics.print(isCommandSelected and "选卡牌" or "点击", startX + 20, commandY + 50)
     end
     
-    -- 存储大营点击区域
+    -- 存储大营点击区域（整个卡牌区域，包括空槽位）
     if not Deployment.clickAreas then Deployment.clickAreas = {} end
     table.insert(Deployment.clickAreas, {
-        type = "positionTab",
-        position = UnitCards.POSITION.COMMAND,
-        x = startX, y = startY,
-        width = cardWidth, height = 18
+        type = "slot",
+        rowType = UnitCards.POSITION.COMMAND,
+        index = 1,
+        x = startX, y = commandY,
+        width = cardWidth, height = cardHeight
     })
     
     -- 绘制各排
@@ -316,14 +317,6 @@ function Deployment.drawFormationPreview(screenWidth, screenHeight)
         
         -- 数量调整按钮
         Deployment.drawRowCountButtons(startX + 130, row.y, row.key)
-        
-        -- 存储位置标签点击区域
-        table.insert(Deployment.clickAreas, {
-            type = "positionTab",
-            position = row.type,
-            x = startX, y = row.y,
-            width = 120, height = 25
-        })
         
         -- 绘制卡牌槽位
         local rowStartX = startX
@@ -699,9 +692,21 @@ function Deployment.handleClick(x, y)
                 return true
                 
             elseif area.type == "slot" then
-                -- 点击了槽位，选中该位置并可以移除卡牌
+                -- 点击了槽位，选中该位置
                 deploymentState.selectedPosition = area.rowType
-                if area.index <= #Deployment.getRowTable(area.rowType) then
+                
+                -- 处理大营特殊逻辑
+                if area.rowType == UnitCards.POSITION.COMMAND then
+                    if deploymentState.selectedCommand then
+                        -- 如果已有大营，移除它
+                        deploymentState.selectedCommand = nil
+                    end
+                    return true
+                end
+                
+                -- 处理其他排
+                local rowTable = Deployment.getRowTable(area.rowType)
+                if rowTable and area.index <= #rowTable then
                     -- 如果有卡牌，移除它
                     Deployment.removeCardFromRow(area.rowType, area.index)
                 end
