@@ -149,16 +149,30 @@ function Battle.createPlayerFromDeployment(id, name, deployData)
         end
         
         -- 设置各单位（支持分散存储的表）
+        local function processUnits(units, rowType)
+            for i = 1, #units do
+                if units[i] then
+                    -- 确保单位有必要的字段
+                    units[i].currentPower = units[i].currentPower or 0
+                    units[i].maxPower = units[i].maxPower or 10
+                    if not units[i].name then
+                        units[i].name = units[i].card and units[i].card.name or (Battle.ROW_NAME[rowType] .. i)
+                    end
+                end
+            end
+            return units
+        end
+        
         if deployData.vanguard then
-            player.units[Battle.ROW.VANGUARD] = deployData.vanguard
+            player.units[Battle.ROW.VANGUARD] = processUnits(deployData.vanguard, Battle.ROW.VANGUARD)
             player.rowCounts[Battle.ROW.VANGUARD] = deployData.rowCounts and deployData.rowCounts.vanguard or 3
         end
         if deployData.center then
-            player.units[Battle.ROW.CENTER] = deployData.center
+            player.units[Battle.ROW.CENTER] = processUnits(deployData.center, Battle.ROW.CENTER)
             player.rowCounts[Battle.ROW.CENTER] = deployData.rowCounts and deployData.rowCounts.center or 3
         end
         if deployData.rear then
-            player.units[Battle.ROW.REAR] = deployData.rear
+            player.units[Battle.ROW.REAR] = processUnits(deployData.rear, Battle.ROW.REAR)
             player.rowCounts[Battle.ROW.REAR] = deployData.rowCounts and deployData.rowCounts.rear or 3
         end
     else
@@ -565,9 +579,10 @@ function Battle.drawFormation(screenWidth, screenHeight)
             love.graphics.print(name, x + 5, y + 8)
             
             -- 战力值
-            if unit.currentPower > 0 then
+            local currentPower = unit.currentPower or 0
+            if currentPower > 0 then
                 love.graphics.setColor(0.9, 0.7, 0.3)
-                love.graphics.print("战力:" .. unit.currentPower, x + 5, y + 25)
+                love.graphics.print("战力:" .. currentPower, x + 5, y + 25)
             end
             
             -- 存储点击区域（用于交互）
