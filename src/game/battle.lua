@@ -356,13 +356,20 @@ end
 function Battle.startTurn()
     local player = players[activePlayer]
     
-    -- 阶段 1: 生成战力
-    currentPhase = "generate"
-    local generatedPower = player.basePowerGeneration
-    player.tempPower = generatedPower
-    addLog(player.name .. " 大营生成 " .. generatedPower .. " 点战力")
+    -- 阶段 1: 准备阶段，等待玩家点击开始
+    currentPhase = "ready"
+    addLog(player.name .. " 回合准备就绪，点击'开始回合'执行战力传递")
+end
+
+-- 玩家点击开始回合按钮
+function Battle.startRound()
+    if currentPhase ~= "ready" then
+        return
+    end
     
-    -- 自动开始传递链（大营→殿后→中军→先锋→敌方大营）
+    local player = players[activePlayer]
+    
+    -- 开始传递链（大营→殿后→中军→先锋→敌方大营）
     Battle.startTransfer()
 end
 
@@ -524,8 +531,17 @@ function Battle.endTurn()
     addLog("---")
     addLog("第 " .. currentTurn .. " 回合 - " .. players[activePlayer].name .. " 的进攻回合")
     
-    -- 开始新回合
-    Battle.startTurn()
+    -- 延迟后开始新回合
+    local timer = 0
+    local oldUpdate = Battle.update
+    Battle.update = function(dt)
+        if oldUpdate then oldUpdate(dt) end
+        timer = timer + dt
+        if timer >= 1.0 then  -- 延迟1秒
+            Battle.startTurn()
+            Battle.update = oldUpdate
+        end
+    end
 end
 
 -- ============================================================================
@@ -610,6 +626,7 @@ function Battle.draw()
     love.graphics.setFont(chineseFont[16])
     local phaseText = {
         idle = "等待中",
+        ready = "准备就绪",
         generate = "生成阶段",
         deploy = "部署阶段",
         transfer = "传递阶段",
@@ -729,31 +746,15 @@ function Battle.drawButtons(screenWidth, screenHeight)
     local buttons = {}
     
     -- 根据阶段显示不同按钮
-    if currentPhase == "deploy" then
-        -- 自动分配按钮
+    if currentPhase == "ready" then
+        -- 开始回合按钮
         table.insert(buttons, {
-            text = "自动分配",
-            x = 20,
-            y = screenHeight - 150,
-            width = 100,
-            height = 40,
-            onClick = function() Battle.autoDeploy() end
-        })
-        
-        -- 确认按钮
-        table.insert(buttons, {
-            text = "确认部署",
-            x = 130,
-            y = screenHeight - 150,
-            width = 100,
-            height = 40,
-            onClick = function() 
-                if players[activePlayer].tempPower <= 0 then
-                    Battle.startTransfer()
-                else
-                    addLog("还有未分配的战力！")
-                end
-            end
+            text = "开始回合",
+            x = screenWidth / 2 - 60,
+            y = screenHeight - 100,
+            width = 120,
+            height = 50,
+            onClick = function() Battle.startRound() end
         })
     end
     
