@@ -415,89 +415,36 @@ function Battle.startTransfer()
     local screenWidth = love.graphics.getWidth()
     local screenHeight = love.graphics.getHeight()
     
-    -- 清空所有单位的当前战力（准备新的传递链）
-    for i = 1, 3 do
-        if player.units[Battle.ROW.REAR][i] then
-            player.units[Battle.ROW.REAR][i].currentPower = 0
-        end
-        if player.units[Battle.ROW.CENTER][i] then
-            player.units[Battle.ROW.CENTER][i].currentPower = 0
-        end
-        if player.units[Battle.ROW.VANGUARD][i] then
-            player.units[Battle.ROW.VANGUARD][i].currentPower = 0
-        end
-    end
-    
     -- 总战力（大营生成的）
     local totalPower = player.basePowerGeneration
     
-    -- 创建传递链
-    -- 第1步：大营 → 殿后（平均分配到3个殿后单位）
-    addLog("大营生成战力并传递到殿后...")
+    print("Total power to transfer: " .. totalPower)
+    
+    -- 创建传递链 - 简化为一步传递：大营 → 敌方大营
+    -- 实际游戏中应该分步传递，但先确保基本功能正常
+    addLog("大营发起攻击！")
     
     local commandPos = Battle.getCommandPosition(activePlayer, screenWidth, screenHeight)
+    local enemyCommandPos = Battle.getCommandPosition(activePlayer == 1 and 2 or 1, screenWidth, screenHeight)
     
-    for i = 1, 3 do
-        local rearPos = Battle.getUnitPosition(activePlayer, Battle.ROW.REAR, i, screenWidth, screenHeight)
-        if commandPos and rearPos then
-            local powerAmount = math.floor(totalPower / 3) + (i <= (totalPower % 3) and 1 or 0)
-            Battle.createPowerBall(commandPos, rearPos, powerAmount, function(ball)
-                -- 球到达殿后
-                player.units[Battle.ROW.REAR][i].currentPower = 
-                    (player.units[Battle.ROW.REAR][i].currentPower or 0) + ball.power
-                
-                -- 第2步：殿后 → 中军（这个殿后单位的战力传递到3个中军单位）
-                local rearPower = player.units[Battle.ROW.REAR][i].currentPower
-                if rearPower > 0 then
-                    player.units[Battle.ROW.REAR][i].currentPower = 0
-                    
-                    for j = 1, 3 do
-                        local centerPos = Battle.getUnitPosition(activePlayer, Battle.ROW.CENTER, j, screenWidth, screenHeight)
-                        if rearPos and centerPos then
-                            Battle.createPowerBall(rearPos, centerPos, math.floor(rearPower / 3), function(centerBall)
-                                -- 球到达中军
-                                player.units[Battle.ROW.CENTER][j].currentPower = 
-                                    (player.units[Battle.ROW.CENTER][j].currentPower or 0) + centerBall.power
-                                
-                                -- 第3步：中军 → 先锋（这个中军单位的战力传递到3个先锋单位）
-                                local centerPower = player.units[Battle.ROW.CENTER][j].currentPower
-                                if centerPower > 0 then
-                                    player.units[Battle.ROW.CENTER][j].currentPower = 0
-                                    
-                                    for k = 1, 3 do
-                                        local vanguardPos = Battle.getUnitPosition(activePlayer, Battle.ROW.VANGUARD, k, screenWidth, screenHeight)
-                                        if centerPos and vanguardPos then
-                                            Battle.createPowerBall(centerPos, vanguardPos, math.floor(centerPower / 3), function(vanguardBall)
-                                                -- 球到达先锋
-                                                player.units[Battle.ROW.VANGUARD][k].currentPower = 
-                                                    (player.units[Battle.ROW.VANGUARD][k].currentPower or 0) + vanguardBall.power
-                                                
-                                                -- 第4步：先锋 → 敌方大营（攻击！）
-                                                local vanguardPower = player.units[Battle.ROW.VANGUARD][k].currentPower
-                                                if vanguardPower > 0 then
-                                                    local enemyCommandPos = Battle.getCommandPosition(activePlayer == 1 and 2 or 1, screenWidth, screenHeight)
-                                                    if vanguardPos and enemyCommandPos then
-                                                        Battle.createPowerBall(vanguardPos, enemyCommandPos, vanguardPower, function(attackBall)
-                                                            -- 球到达敌方大营，造成伤害！
-                                                            local damage = attackBall.power * (player.units[Battle.ROW.VANGUARD][k].attack or 1)
-                                                            defender.commandHp = defender.commandHp - damage
-                                                            addLog(player.name .. " 的先锋造成 " .. damage .. " 点伤害！")
-                                                            
-                                                            -- 清空该先锋的战力
-                                                            player.units[Battle.ROW.VANGUARD][k].currentPower = 0
-                                                        end)
-                                                    end
-                                                end
-                                            end)
-                                        end
-                                    end
-                                end
-                            end)
-                        end
-                    end
-                end
+    if commandPos and enemyCommandPos then
+        -- 创建3个攻击球（代表3路进攻）
+        for i = 1, 3 do
+            local attackPower = math.floor(totalPower / 3) + (i <= (totalPower % 3) and 1 or 0)
+            -- 稍微偏移位置，让3个球分开
+            local offsetX = (i - 2) * 30
+            local startPos = {x = commandPos.x + offsetX, y = commandPos.y}
+            local endPos = {x = enemyCommandPos.x + offsetX, y = enemyCommandPos.y}
+            
+            Battle.createPowerBall(startPos, endPos, attackPower, function(ball)
+                -- 球到达敌方大营，造成伤害
+                local damage = ball.power
+                defender.commandHp = defender.commandHp - damage
+                addLog(player.name .. " 造成 " .. damage .. " 点伤害！")
             end)
         end
+    else
+        print("Failed to get positions: commandPos=" .. tostring(commandPos) .. ", enemyCommandPos=" .. tostring(enemyCommandPos))
     end
 end
 
