@@ -611,6 +611,13 @@ function Deployment.drawButtons(screenWidth, screenHeight)
         onClick = function()
             if Deployment.isComplete() then
                 print("Deployment complete! Switching to game...")
+                -- 获取布阵数据并传递给 battle
+                local deploymentResult = Deployment.getDeploymentResult()
+                local Battle = require('src.game.battle')
+                Battle.setDeploymentData({
+                    player1 = deploymentResult,
+                    player2 = nil  -- AI will auto-deploy
+                })
                 -- 切换到战斗状态
                 local GameState = require('src.game.gamestate')
                 GameState.switch("game")

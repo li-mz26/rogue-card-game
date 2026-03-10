@@ -139,18 +139,27 @@ function Battle.createPlayerFromDeployment(id, name, deployData)
             player.maxCommandHp = 30
         end
         
-        -- 设置各单位
+        -- 辅助函数：计算分散存储表中的实际卡牌数量
+        local function countCards(cardTable, maxIndex)
+            local count = 0
+            for i = 1, maxIndex do
+                if cardTable[i] then count = count + 1 end
+            end
+            return count
+        end
+        
+        -- 设置各单位（支持分散存储的表）
         if deployData.vanguard then
             player.units[Battle.ROW.VANGUARD] = deployData.vanguard
-            player.rowCounts[Battle.ROW.VANGUARD] = #deployData.vanguard
+            player.rowCounts[Battle.ROW.VANGUARD] = deployData.rowCounts and deployData.rowCounts.vanguard or 3
         end
         if deployData.center then
             player.units[Battle.ROW.CENTER] = deployData.center
-            player.rowCounts[Battle.ROW.CENTER] = #deployData.center
+            player.rowCounts[Battle.ROW.CENTER] = deployData.rowCounts and deployData.rowCounts.center or 3
         end
         if deployData.rear then
             player.units[Battle.ROW.REAR] = deployData.rear
-            player.rowCounts[Battle.ROW.REAR] = #deployData.rear
+            player.rowCounts[Battle.ROW.REAR] = deployData.rowCounts and deployData.rowCounts.rear or 3
         end
     else
         -- 创建随机AI布阵
@@ -422,6 +431,9 @@ function addLog(message)
 end
 
 function loadChineseFonts()
+    -- 如果已经加载过，直接返回
+    if chineseFont[16] then return true end
+    
     local fontPaths = {
         "assets/fonts/simhei.ttf",
         "assets/fonts/simkai.ttf",
@@ -439,9 +451,19 @@ function loadChineseFonts()
             chineseFont[24] = love.graphics.newFont(path, 24)
         end)
         if success then
+            print("Loaded font: " .. path)
             return true
         end
     end
+    
+    -- 如果都失败了，使用默认字体（只创建一次）
+    print("Warning: Could not load Chinese fonts, using default")
+    chineseFont[12] = love.graphics.newFont(12)
+    chineseFont[14] = love.graphics.newFont(14)
+    chineseFont[16] = love.graphics.newFont(16)
+    chineseFont[18] = love.graphics.newFont(18)
+    chineseFont[20] = love.graphics.newFont(20)
+    chineseFont[24] = love.graphics.newFont(24)
     return false
 end
 
@@ -463,12 +485,12 @@ function Battle.draw()
     
     -- 绘制标题
     love.graphics.setColor(0.9, 0.8, 0.4)
-    love.graphics.setFont(chineseFont[24] or love.graphics.newFont(24))
+    love.graphics.setFont(chineseFont[24])
     love.graphics.print("卡牌战争 - 第 " .. currentTurn .. " 回合", 20, 20)
     
     -- 绘制当前阶段
     love.graphics.setColor(0.7, 0.7, 0.7)
-    love.graphics.setFont(chineseFont[16] or love.graphics.newFont(16))
+    love.graphics.setFont(chineseFont[16])
     local phaseText = {
         idle = "等待中",
         generate = "生成阶段",
@@ -538,7 +560,7 @@ function Battle.drawFormation(screenWidth, screenHeight)
             
             -- 单位名称
             love.graphics.setColor(1, 1, 1)
-            love.graphics.setFont(chineseFont[12] or love.graphics.newFont(12))
+            love.graphics.setFont(chineseFont[12])
             local name = (rowType == Battle.ROW.COMMAND) and "大营" or (Battle.ROW_NAME[rowType] .. j)
             love.graphics.print(name, x + 5, y + 8)
             
@@ -569,7 +591,7 @@ function Battle.drawFormation(screenWidth, screenHeight)
         
         -- HP文字
         love.graphics.setColor(1, 1, 1)
-        love.graphics.setFont(chineseFont[14] or love.graphics.newFont(14))
+        love.graphics.setFont(chineseFont[14])
         love.graphics.print(player.commandHp .. "/" .. player.maxCommandHp, x + 50, y + 12)
     end
     
@@ -577,7 +599,7 @@ function Battle.drawFormation(screenWidth, screenHeight)
     if currentPhase == "deploy" then
         local player = players[activePlayer]
         love.graphics.setColor(0.9, 0.7, 0.3)
-        love.graphics.setFont(chineseFont[18] or love.graphics.newFont(18))
+        love.graphics.setFont(chineseFont[18])
         love.graphics.print("待分配战力: " .. player.tempPower, 20, 100)
     end
 end
@@ -615,7 +637,7 @@ function Battle.drawButtons(screenWidth, screenHeight)
     end
     
     -- 绘制按钮
-    love.graphics.setFont(chineseFont[16] or love.graphics.newFont(16))
+    love.graphics.setFont(chineseFont[16])
     for _, btn in ipairs(buttons) do
         -- 检测悬停
         local mx, my = love.mouse.getPosition()
@@ -636,7 +658,7 @@ function Battle.drawButtons(screenWidth, screenHeight)
         
         -- 按钮文字
         love.graphics.setColor(1, 1, 1)
-        local textWidth = (chineseFont[16] or love.graphics.newFont(16)):getWidth(btn.text)
+        local textWidth = chineseFont[16]:getWidth(btn.text)
         love.graphics.print(btn.text, btn.x + (btn.width - textWidth) / 2, btn.y + 10)
         
         -- 存储按钮点击区域
