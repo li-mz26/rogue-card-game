@@ -7,6 +7,7 @@ local GameState = {}
 -- 游戏状态枚举
 GameState.STATE = {
     MENU = "menu",
+    DEPLOYMENT = "deployment",  -- 布阵阶段
     GAME = "game",
     PAUSE = "pause",
     GAME_OVER = "game_over",
@@ -44,6 +45,7 @@ end
 function GameState.init()
     -- 初始化各个状态处理器
     stateHandlers[GameState.STATE.MENU] = require('src.ui.menu')
+    stateHandlers[GameState.STATE.DEPLOYMENT] = require('src.game.deployment')
     stateHandlers[GameState.STATE.GAME] = require('src.game.battle')
     stateHandlers[GameState.STATE.PAUSE] = require('src.ui.pause')
     

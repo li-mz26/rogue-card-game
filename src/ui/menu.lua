@@ -68,7 +68,7 @@ function Menu.init()
         height = 50,
         onClick = function()
             local GameState = require('src.game.gamestate')
-            GameState.switch("game")
+            GameState.switch("deployment")
         end
     })
     

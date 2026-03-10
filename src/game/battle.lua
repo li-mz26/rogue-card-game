@@ -56,9 +56,17 @@ local battleLog = {}        -- 战斗日志
 -- 中文字体
 local chineseFont = {}
 
+-- 布阵数据
+local deploymentData = {}}
+
 -- ============================================================================
 -- 初始化
 -- ============================================================================
+
+-- 设置布阵数据
+function Battle.setDeploymentData(data)
+    deploymentData = data or {}
+end
 
 function Battle.init()
     print("初始化战斗...")
@@ -66,11 +74,20 @@ function Battle.init()
     -- 加载字体
     loadChineseFonts()
     
-    -- 初始化两个玩家
-    players = {
-        Battle.createPlayer(1, "玩家"),
-        Battle.createPlayer(2, "敌人")
-    }
+    -- 使用布阵数据或创建默认玩家
+    if deploymentData and deploymentData.player1 then
+        -- 使用玩家布阵
+        players = {
+            Battle.createPlayerFromDeployment(1, "玩家", deploymentData.player1),
+            Battle.createPlayerFromDeployment(2, "敌人", deploymentData.player2 or nil)
+        }
+    else
+        -- 创建默认玩家
+        players = {
+            Battle.createPlayer(1, "玩家"),
+            Battle.createPlayer(2, "敌人")
+        }
+    end
     
     currentTurn = 1
     currentPhase = "generate"
@@ -84,14 +101,79 @@ function Battle.init()
     Battle.startTurn()
 end
 
+-- 从布阵数据创建玩家
+function Battle.createPlayerFromDeployment(id, name, deployData)
+    local player = {
+        id = id,
+        name = name,
+        command = nil,            -- 大营卡牌
+        units = {                 -- 各单位
+            [Battle.ROW.COMMAND] = {},
+            [Battle.ROW.VANGUARD] = {},
+            [Battle.ROW.CENTER] = {},
+            [Battle.ROW.REAR] = {}
+        },
+        basePowerGeneration = 5,  -- 基础战力生成
+        tempPower = 0,            -- 当前待分配的战力
+        rowCounts = {             -- 每排单位数量
+            [Battle.ROW.VANGUARD] = 3,
+            [Battle.ROW.CENTER] = 3,
+            [Battle.ROW.REAR] = 3
+        }
+    }
+    
+    if deployData then
+        -- 设置大营
+        if deployData.command then
+            player.command = deployData.command
+            player.commandHp = deployData.command.hp or 30
+            player.maxCommandHp = deployData.command.hp or 30
+            -- 应用大营能力
+            for _, ability in ipairs(deployData.command.abilities or {}) do
+                if ability.type == "bonus_generate" then
+                    player.basePowerGeneration = player.basePowerGeneration + ability.value
+                end
+            end
+        else
+            player.commandHp = 30
+            player.maxCommandHp = 30
+        end
+        
+        -- 设置各单位
+        if deployData.vanguard then
+            player.units[Battle.ROW.VANGUARD] = deployData.vanguard
+            player.rowCounts[Battle.ROW.VANGUARD] = #deployData.vanguard
+        end
+        if deployData.center then
+            player.units[Battle.ROW.CENTER] = deployData.center
+            player.rowCounts[Battle.ROW.CENTER] = #deployData.center
+        end
+        if deployData.rear then
+            player.units[Battle.ROW.REAR] = deployData.rear
+            player.rowCounts[Battle.ROW.REAR] = #deployData.rear
+        end
+    else
+        -- 创建随机AI布阵
+        local Deployment = require('src.game.deployment')
+        Deployment.init(id)
+        Deployment.autoDeploy()
+        local aiData = Deployment.getDeploymentResult()
+        return Battle.createPlayerFromDeployment(id, name, aiData)
+    end
+    
+    return player
+end
+
+-- 创建默认玩家
 function Battle.createPlayer(id, name)
     return {
         id = id,
         name = name,
-        commandHp = 30,           -- 大营生命值
+        command = nil,
+        commandHp = 30,
         maxCommandHp = 30,
-        units = {                 -- 各单位
-            [Battle.ROW.COMMAND] = { Battle.createUnit(Battle.ROW.COMMAND, 1) },
+        units = {
+            [Battle.ROW.COMMAND] = {},
             [Battle.ROW.VANGUARD] = { 
                 Battle.createUnit(Battle.ROW.VANGUARD, 1),
                 Battle.createUnit(Battle.ROW.VANGUARD, 2),
@@ -108,22 +190,44 @@ function Battle.createPlayer(id, name)
                 Battle.createUnit(Battle.ROW.REAR, 3)
             }
         },
-        basePowerGeneration = 5,  -- 基础战力生成
-        tempPower = 0,            -- 当前待分配的战力
-        deployedPower = {}        -- 已部署的战力 { rowIndex = { unitIndex = power } }
+        basePowerGeneration = 5,
+        tempPower = 0,
+        rowCounts = {
+            [Battle.ROW.VANGUARD] = 3,
+            [Battle.ROW.CENTER] = 3,
+            [Battle.ROW.REAR] = 3
+        }
     }
 end
 
-function Battle.createUnit(row, index)
-    return {
-        row = row,
-        index = index,
-        name = Battle.ROW_NAME[row] .. index,
-        attack = (row == Battle.ROW.VANGUARD) and 1 or 0,  -- 先锋有攻击力
-        defense = 0,
-        currentPower = 0,  -- 当前持有的战力
-        maxPower = 10      -- 最大战力容量
-    }
+function Battle.createUnit(row, index, card)
+    if card then
+        -- 使用卡牌数据创建单位
+        return {
+            row = row,
+            index = index,
+            card = card,
+            name = card.name,
+            attack = card.attack or ((row == Battle.ROW.VANGUARD) and 1 or 0),
+            defense = card.defense or 0,
+            currentPower = 0,
+            maxPower = 10,
+            abilities = card.abilities or {}
+        }
+    else
+        -- 创建默认单位
+        return {
+            row = row,
+            index = index,
+            card = nil,
+            name = Battle.ROW_NAME[row] .. index,
+            attack = (row == Battle.ROW.VANGUARD) and 1 or 0,
+            defense = 0,
+            currentPower = 0,
+            maxPower = 10,
+            abilities = {}
+        }
+    end
 end
 
 -- ============================================================================
