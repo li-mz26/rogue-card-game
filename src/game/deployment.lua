@@ -545,13 +545,15 @@ function Deployment.drawCardSelection(screenWidth, screenHeight)
             love.graphics.setFont(chineseFont[8] or love.graphics.newFont(8))
             love.graphics.printf(card.description, panelX + 15, cardY + 32, panelWidth - 30, "left")
             
-            -- 存储点击区域（考虑滚动偏移）
+            -- 存储点击区域（使用屏幕坐标，不考虑滚动偏移）
             if not Deployment.clickAreas then Deployment.clickAreas = {} end
             table.insert(Deployment.clickAreas, {
                 type = "card",
                 cardId = card.id,
-                x = panelX + 10, y = cardY,
-                width = panelWidth - 20, height = cardHeight
+                x = panelX + 10, 
+                y = cardY + cardListOffset,  -- 加回偏移量，使用屏幕坐标
+                width = panelWidth - 20, 
+                height = cardHeight
             })
         end
     end
@@ -600,19 +602,22 @@ function Deployment.drawButtons(screenWidth, screenHeight)
     })
     
     -- 确认按钮
-    local canConfirm = Deployment.isComplete()
+    local isComplete = Deployment.isComplete()
+    print("isComplete: " .. tostring(isComplete))
     table.insert(buttons, {
         text = "确认",
         x = screenWidth - 140,
         y = screenHeight - 70,
         width = 120,
         height = 40,
-        enabled = canConfirm,
+        enabled = isComplete,
         onClick = function()
+            print("Confirm button clicked!")
             if Deployment.isComplete() then
                 print("Deployment complete! Switching to game...")
                 -- 获取布阵数据并传递给 battle
                 local deploymentResult = Deployment.getDeploymentResult()
+                print("Deployment result: " .. tostring(deploymentResult))
                 local Battle = require('src.game.battle')
                 Battle.setDeploymentData({
                     player1 = deploymentResult,
