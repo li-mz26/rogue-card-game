@@ -93,20 +93,11 @@ end
 function Deployment.initAvailableCards()
     deploymentState.availableCards = {}
     
-    -- 所有可用的人物卡牌（不再按位置限制）
-    local defaultCards = {
-        "liu_bei", "cao_cao", "sun_quan",           -- 君主
-        "guan_yu", "zhang_fei", "zhao_yun", "dian_wei", "zhang_liao",  -- 武将
-        "zhuge_liang", "zhou_yu", "simayi", "xun_yu", "jiang_wei",    -- 谋士
-        "huang_zhong", "tai_shi_ci"                 -- 弓将
-    }
+    -- 使用所有可用的卡牌
+    local allCards = UnitCards.getAll()
     
-    for _, cardId in ipairs(defaultCards) do
-        local template = UnitCards.getById(cardId)
-        if template then
-            -- 只复制基础信息，不创建实例（位置在放置时确定）
-            table.insert(deploymentState.availableCards, template)
-        end
+    for _, card in ipairs(allCards) do
+        table.insert(deploymentState.availableCards, card)
     end
 end
 
