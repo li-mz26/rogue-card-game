@@ -275,6 +275,9 @@ function Deployment.update(dt)
 end
 
 function Deployment.draw()
+    -- 清空点击区域（每帧重新计算）
+    Deployment.clickAreas = {}
+    
     local screenWidth = love.graphics.getWidth()
     local screenHeight = love.graphics.getHeight()
     
@@ -331,7 +334,6 @@ function Deployment.drawFormationPreview(screenWidth, screenHeight)
     end
     
     -- 存储大营点击区域（整个卡牌区域，包括空槽位）
-    if not Deployment.clickAreas then Deployment.clickAreas = {} end
     table.insert(Deployment.clickAreas, {
         type = "slot",
         rowType = UnitCards.POSITION.COMMAND,
@@ -569,7 +571,6 @@ function Deployment.drawCardSelection(screenWidth, screenHeight)
             love.graphics.printf(card.description, panelX + 15, cardY + 32, panelWidth - 30, "left")
             
             -- 存储点击区域（使用屏幕坐标，不考虑滚动偏移）
-            if not Deployment.clickAreas then Deployment.clickAreas = {} end
             table.insert(Deployment.clickAreas, {
                 type = "card",
                 cardId = card.id,
@@ -626,7 +627,7 @@ function Deployment.drawButtons(screenWidth, screenHeight)
     
     -- 确认按钮
     local isComplete = Deployment.isComplete()
-    print("isComplete: " .. tostring(isComplete))
+    -- print("isComplete: " .. tostring(isComplete))
     table.insert(buttons, {
         text = "确认",
         x = screenWidth - 140,
@@ -682,7 +683,6 @@ function Deployment.drawButtons(screenWidth, screenHeight)
         love.graphics.print(btn.text, btn.x + (btn.width - textWidth) / 2, btn.y + 10)
         
         -- 存储点击区域
-        if not Deployment.clickAreas then Deployment.clickAreas = {} end
         table.insert(Deployment.clickAreas, {
             type = "button",
             onClick = btn.onClick,
@@ -748,23 +748,14 @@ end
 
 -- 处理点击（需要在draw之后调用）
 function Deployment.handleClick(x, y)
-    print("handleClick: " .. x .. ", " .. y)
-    if not Deployment.clickAreas then 
-        print("No click areas")
-        return 
-    end
-    
-    print("Click areas count: " .. #Deployment.clickAreas)
+    if not Deployment.clickAreas then return end
     
     for _, area in ipairs(Deployment.clickAreas) do
         if x >= area.x and x <= area.x + area.width
            and y >= area.y and y <= area.y + area.height then
             
-            print("Clicked on area type: " .. area.type)
-            
             if area.type == "card" then
                 -- 点击了卡牌，添加到当前选中的具体槽位
-                print("Card clicked: " .. area.cardId)
                 Deployment.addCardToRow(area.cardId, deploymentState.selectedPosition, deploymentState.selectedSlotIndex)
                 return true
                 
