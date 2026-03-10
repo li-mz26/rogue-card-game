@@ -748,14 +748,23 @@ end
 
 -- 处理点击（需要在draw之后调用）
 function Deployment.handleClick(x, y)
-    if not Deployment.clickAreas then return end
+    print("handleClick: " .. x .. ", " .. y)
+    if not Deployment.clickAreas then 
+        print("No click areas")
+        return 
+    end
+    
+    print("Click areas count: " .. #Deployment.clickAreas)
     
     for _, area in ipairs(Deployment.clickAreas) do
         if x >= area.x and x <= area.x + area.width
            and y >= area.y and y <= area.y + area.height then
             
+            print("Clicked on area type: " .. area.type)
+            
             if area.type == "card" then
                 -- 点击了卡牌，添加到当前选中的具体槽位
+                print("Card clicked: " .. area.cardId)
                 Deployment.addCardToRow(area.cardId, deploymentState.selectedPosition, deploymentState.selectedSlotIndex)
                 return true
                 
