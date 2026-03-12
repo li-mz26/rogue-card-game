@@ -32,6 +32,8 @@ function Input.keypressed(key)
             GameState.switch("pause")
         elseif GameState.getCurrentState() == GameState.STATE.PAUSE then
             GameState.switch("game")
+        elseif GameState.getCurrentState() == GameState.STATE.CARDS then
+            GameState.switch("menu")
         end
     end
 end

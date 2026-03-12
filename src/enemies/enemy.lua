@@ -18,7 +18,7 @@ function Enemy.new(data)
     self.currentIntent = nil
     self.nextIntent = nil
     
-    -- 状态效果
+    -- 状态效�?
     self.statusEffects = {}
     
     -- AI 行为模式
@@ -52,28 +52,28 @@ function Enemy:executeIntent(player)
         -- 攻击玩家
         local damage = intent.value
         player:takeDamage(damage)
-        print(self.name .. " 对玩家造成 " .. damage .. " 点伤害!")
+        print(self.name .. " 对玩家造成 " .. damage .. " 点伤�?")
         
     elseif intent.type == "defend" then
         -- 获得格挡
         self.block = self.block + intent.value
-        print(self.name .. " 获得 " .. intent.value .. " 点格挡")
+        print(self.name .. " 获得 " .. intent.value .. " 点格�?)
         
     elseif intent.type == "buff" then
         -- 增益效果
-        print(self.name .. " 使用增益技能")
+        print(self.name .. " 使用增益技�?)
         
     elseif intent.type == "debuff" then
         -- 减益效果
-        print(self.name .. " 对玩家施加减益")
+        print(self.name .. " 对玩家施加减�?)
     end
     
-    -- 准备下一个意图
+    -- 准备下一个意�?
     self.currentIntent = self:decideIntent()
 end
 
 function Enemy:takeDamage(amount)
-    -- 先消耗格挡
+    -- 先消耗格�?
     if self.block > 0 then
         local blocked = math.min(self.block, amount)
         self.block = self.block - blocked
@@ -114,7 +114,7 @@ function Enemy:isAlive()
 end
 
 function Enemy:draw(x, y)
-    -- 基础绘制，子类可以覆盖
+    -- 基础绘制，子类可以覆�?
     love.graphics.setColor(0.8, 0.3, 0.3)
     love.graphics.rectangle("fill", x, y, 100, 100)
     

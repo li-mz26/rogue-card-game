@@ -1,5 +1,5 @@
 --[[
-    玩家类
+    玩家�?
 --]]
 
 local Card = require('src.cards.card')
@@ -10,7 +10,7 @@ Player.__index = Player
 function Player.new()
     local self = setmetatable({}, Player)
     
-    -- 基础属性
+    -- 基础属�?
     self.hp = 80
     self.maxHp = 80
     self.block = 0
@@ -25,7 +25,7 @@ function Player.new()
     self.discard = {}
     self.exhaust = {}
     
-    -- 状态效果
+    -- 状态效�?
     self.statusEffects = {}
     
     -- 遗物
@@ -38,7 +38,7 @@ function Player.new()
 end
 
 function Player:initStarterDeck()
-    -- 添加基础攻击牌
+    -- 添加基础攻击�?
     for i = 1, 5 do
         table.insert(self.deck, Card.new({
             id = "strike_" .. i,
@@ -46,11 +46,11 @@ function Player:initStarterDeck()
             type = Card.TYPE.ATTACK,
             cost = 1,
             damage = 6,
-            description = "造成 6 点伤害"
+            description = "造成 6 点伤�?
         }))
     end
     
-    -- 添加基础防御牌
+    -- 添加基础防御�?
     for i = 1, 5 do
         table.insert(self.deck, Card.new({
             id = "defend_" .. i,
@@ -58,13 +58,13 @@ function Player:initStarterDeck()
             type = Card.TYPE.DEFENSE,
             cost = 1,
             block = 5,
-            description = "获得 5 点格挡"
+            description = "获得 5 点格�?
         }))
     end
 end
 
 function Player:takeDamage(amount)
-    -- 先消耗格挡
+    -- 先消耗格�?
     if self.block > 0 then
         local blocked = math.min(self.block, amount)
         self.block = self.block - blocked
@@ -91,13 +91,13 @@ function Player:startTurn()
     -- 恢复能量
     self.energy = self.maxEnergy
     
-    -- 清除格挡（某些 Roguelike 规则保留）
+    -- 清除格挡（某�?Roguelike 规则保留�?
     -- self.block = 0
     
     -- 抽牌
     self:drawCards(5)
     
-    -- 触发回合开始效果
+    -- 触发回合开始效�?
     self:triggerStatusEffects("turnStart")
 end
 
@@ -117,7 +117,7 @@ function Player:drawCards(count)
         if #self.deck == 0 then
             -- 牌组空了，洗 discard
             if #self.discard == 0 then
-                break -- 没有牌可抽
+                break -- 没有牌可�?
             end
             self.deck = self.discard
             self.discard = {}

@@ -1,6 +1,6 @@
 # 字体目录
 
-此目录用于存放游戏中使用的中文字体文件。
+此目录用于存放游戏中使用的中文字体文件�?
 
 ## 需要的字体
 
@@ -14,31 +14,31 @@
 
 ## 安装方法
 
-### 方法 1：复制系统字体（推荐）
+### 方法 1：复制系统字体（推荐�?
 
-从 `C:\Windows\Fonts\` 目录复制字体文件到此目录：
+�?`C:\Windows\Fonts\` 目录复制字体文件到此目录�?
 
 ```powershell
 # 复制黑体（推荐）
 copy "C:\Windows\Fonts\simhei.ttf" "assets\fonts\"
 
-# 或复制楷体
+# 或复制楷�?
 copy "C:\Windows\Fonts\simkai.ttf" "assets\fonts\"
 ```
 
-### 方法 2：下载开源字体
+### 方法 2：下载开源字�?
 
-也可以下载开源中文字体放到此目录，如：
+也可以下载开源中文字体放到此目录，如�?
 - [思源黑体 (Noto Sans CJK)](https://github.com/notofonts/noto-cjk)
 - [思源宋体 (Noto Serif CJK)](https://github.com/notofonts/noto-cjk)
 - [文泉驿字体](http://wenq.org/)
 
-## 字体加载优先级
+## 字体加载优先�?
 
-游戏会按以下顺序尝试加载字体：
-1. `assets/fonts/simhei.ttf` (项目内黑体)
-2. `assets/fonts/simkai.ttf` (项目内楷体)
+游戏会按以下顺序尝试加载字体�?
+1. `assets/fonts/simhei.ttf` (项目内黑�?
+2. `assets/fonts/simkai.ttf` (项目内楷�?
 3. `C:/Windows/Fonts/simhei.ttf` (系统黑体)
 4. `C:/Windows/Fonts/simkai.ttf` (系统楷体)
 
-如果都找不到，中文将显示为方框。
+如果都找不到，中文将显示为方框�?

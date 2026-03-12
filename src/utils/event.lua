@@ -4,7 +4,7 @@
 
 local Event = {}
 
--- 事件监听器
+-- 事件监听�?
 local listeners = {}
 
 function Event.on(eventName, callback)

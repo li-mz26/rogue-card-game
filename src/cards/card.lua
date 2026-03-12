@@ -24,13 +24,13 @@ function Card.new(data)
     local self = setmetatable({}, Card)
     
     self.id = data.id or "unknown"
-    self.name = data.name or "未命名卡牌"
+    self.name = data.name or "未命名卡�?
     self.description = data.description or ""
     self.type = data.type or Card.TYPE.ATTACK
     self.rarity = data.rarity or Card.RARITY.COMMON
     self.cost = data.cost or 1
     
-    -- 效果数值
+    -- 效果数�?
     self.damage = data.damage or 0
     self.block = data.block or 0
     self.heal = data.heal or 0
@@ -69,7 +69,7 @@ function Card:play(player, target)
         return false
     end
     
-    -- 消耗能量
+    -- 消耗能�?
     player.energy = player.energy - self.cost
     
     -- 应用效果
@@ -101,7 +101,7 @@ function Card:applyEffect(player, target)
     
     -- 抽牌
     if self.cardDraw > 0 then
-        -- 抽牌逻辑由战斗系统处理
+        -- 抽牌逻辑由战斗系统处�?
     end
     
     -- 应用特殊效果

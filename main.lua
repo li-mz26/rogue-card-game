@@ -1,6 +1,6 @@
 --[[
     Rogue Card Game
-    一个使用 LÖVE2D 开发的 Roguelike 卡牌游戏
+    一个使�?LÖVE2D 开发的 Roguelike 卡牌游戏
 --]]
 
 -- 导入模块
@@ -10,10 +10,10 @@ local Input = require('src.utils.input')
 function love.load()
     love.window.setTitle("Rogue Card Game")
     
-    -- 初始化随机种子
+    -- 初始化随机种�?
     math.randomseed(os.time())
     
-    -- 初始化游戏状态
+    -- 初始化游戏状�?
     GameState.init()
     
     print("游戏加载完成!")

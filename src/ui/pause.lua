@@ -1,36 +1,33 @@
---[[
-    暂停菜单界面
+﻿--[[
+    Pause menu UI
 --]]
 
 local Pause = {}
 
 local buttons = {}
-
--- 中文字体
 local chineseFont = nil
 
--- 加载中文字体
 local function loadChineseFonts()
     local fontPaths = {
-        "assets/fonts/simhei.ttf",        -- 项目内黑体
-        "assets/fonts/simkai.ttf",        -- 项目内楷体
-        "C:/Windows/Fonts/simhei.ttf",    -- 系统黑体
-        "C:/Windows/Fonts/simkai.ttf",    -- 系统楷体
+        "assets/fonts/simhei.ttf",
+        "assets/fonts/simkai.ttf",
+        "C:/Windows/Fonts/simhei.ttf",
+        "C:/Windows/Fonts/simkai.ttf",
     }
-    
+
     for _, path in ipairs(fontPaths) do
         local success, font = pcall(function()
             return love.graphics.newFont(path, 24)
         end)
         if success then
             chineseFont = font
-            print("成功加载字体: " .. path)
+            print("Loaded font: " .. path)
             return true
         end
     end
-    
+
     chineseFont = love.graphics.newFont(24)
-    print("警告: 未找到中文字体")
+    print("Warning: Chinese font not found")
     return false
 end
 
@@ -38,17 +35,16 @@ function Pause.init()
     if not chineseFont then
         loadChineseFonts()
     end
-    
+
     buttons = {}
-    
+
     local screenWidth = love.graphics.getWidth()
     local screenHeight = love.graphics.getHeight()
     local centerX = screenWidth / 2
     local startY = screenHeight / 2 - 30
-    
-    -- 继续按钮
+
     table.insert(buttons, {
-        text = "继续游戏",
+        text = "Resume",
         x = centerX - 100,
         y = startY,
         width = 200,
@@ -58,10 +54,9 @@ function Pause.init()
             GameState.switch("game")
         end
     })
-    
-    -- 返回主菜单
+
     table.insert(buttons, {
-        text = "主菜单",
+        text = "Main Menu",
         x = centerX - 100,
         y = startY + 70,
         width = 200,
@@ -77,27 +72,24 @@ function Pause.update(dt)
     local mx, my = love.mouse.getPosition()
     for _, btn in ipairs(buttons) do
         btn.hovered = mx >= btn.x and mx <= btn.x + btn.width
-                      and my >= btn.y and my <= btn.y + btn.height
+            and my >= btn.y and my <= btn.y + btn.height
     end
 end
 
 function Pause.draw()
     local screenWidth = love.graphics.getWidth()
     local screenHeight = love.graphics.getHeight()
-    
-    -- 半透明背景
+
     love.graphics.setColor(0, 0, 0, 0.7)
     love.graphics.rectangle("fill", 0, 0, screenWidth, screenHeight)
-    
-    -- 标题
+
     love.graphics.setColor(1, 1, 1)
     local titleFont = love.graphics.newFont(36)
     love.graphics.setFont(titleFont)
-    local title = "游戏暂停"
+    local title = "Paused"
     local titleWidth = titleFont:getWidth(title)
     love.graphics.print(title, (screenWidth - titleWidth) / 2, 200)
-    
-    -- 按钮
+
     love.graphics.setFont(chineseFont or love.graphics.newFont(24))
     for _, btn in ipairs(buttons) do
         if btn.hovered then
@@ -106,24 +98,24 @@ function Pause.draw()
             love.graphics.setColor(0.3, 0.4, 0.5)
         end
         love.graphics.rectangle("fill", btn.x, btn.y, btn.width, btn.height, 5, 5)
-        
+
         love.graphics.setColor(0.6, 0.7, 0.8)
         love.graphics.rectangle("line", btn.x, btn.y, btn.width, btn.height, 5, 5)
-        
+
         love.graphics.setColor(1, 1, 1)
         local font = love.graphics.getFont()
         local textWidth = font:getWidth(btn.text)
         local textHeight = font:getHeight()
-        love.graphics.print(btn.text, btn.x + (btn.width - textWidth) / 2, 
-                           btn.y + (btn.height - textHeight) / 2)
+        love.graphics.print(btn.text, btn.x + (btn.width - textWidth) / 2,
+            btn.y + (btn.height - textHeight) / 2)
     end
-    
+
     love.graphics.setColor(1, 1, 1)
 end
 
 function Pause.mousepressed(x, y, button)
     if button ~= 1 then return end
-    
+
     for _, btn in ipairs(buttons) do
         if btn.hovered and btn.onClick then
             btn.onClick()
