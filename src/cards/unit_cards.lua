@@ -323,6 +323,64 @@ UnitCards.DATABASE = {
     }
 }
 
+UnitCards.TAGS = {
+    liu_bei = { dynasty = "Three Kingdoms", surname = "Liu", origin = "Zhuo County" },
+    cao_cao = { dynasty = "Three Kingdoms", surname = "Cao", origin = "Bozhou" },
+    guan_yu = { dynasty = "Three Kingdoms", surname = "Guan", origin = "Xie County" },
+    zhuge_liang = { dynasty = "Three Kingdoms", surname = "Zhuge", origin = "Langya" },
+    zhang_fei = { dynasty = "Three Kingdoms", surname = "Zhang", origin = "Zhuo County" },
+    zhao_yun = { dynasty = "Three Kingdoms", surname = "Zhao", origin = "Changshan" },
+    sun_quan = { dynasty = "Three Kingdoms", surname = "Sun", origin = "Fuchun" },
+    zhou_yu = { dynasty = "Three Kingdoms", surname = "Zhou", origin = "Lujiang" },
+    simayi = { dynasty = "Three Kingdoms", surname = "Sima", origin = "Wen County" },
+    huang_zhong = { dynasty = "Three Kingdoms", surname = "Huang", origin = "Nanyang" },
+    dian_wei = { dynasty = "Three Kingdoms", surname = "Dian", origin = "Chenliu" },
+    zhang_liao = { dynasty = "Three Kingdoms", surname = "Zhang", origin = "Mayi" },
+    taishi_ci = { dynasty = "Three Kingdoms", surname = "Taishi", origin = "Donglai" },
+    lv_meng = { dynasty = "Three Kingdoms", surname = "Lv", origin = "Runan" },
+    gan_ning = { dynasty = "Three Kingdoms", surname = "Gan", origin = "Baxi" },
+    xu_chu = { dynasty = "Three Kingdoms", surname = "Xu", origin = "Qiao" },
+    ma_chao = { dynasty = "Three Kingdoms", surname = "Ma", origin = "Maoling" },
+    huang_gai = { dynasty = "Three Kingdoms", surname = "Huang", origin = "Lingling" },
+    wei_yan = { dynasty = "Three Kingdoms", surname = "Wei", origin = "Yiyang" },
+    jiang_wei = { dynasty = "Three Kingdoms", surname = "Jiang", origin = "Tianshui" },
+    xun_yu = { dynasty = "Three Kingdoms", surname = "Xun", origin = "Yingchuan" }
+}
+
+local function clamp(v, minV, maxV)
+    if v < minV then return minV end
+    if v > maxV then return maxV end
+    return v
+end
+
+local function buildTransferStats(effect)
+    local attack = (effect and effect.attack) or 0
+    local defense = (effect and effect.defense) or 0
+    local sendPower = 0.52 + attack * 0.07
+    local recvPower = 0.5 + defense * 0.08
+    local interceptPower = 0.08 + defense * 0.06
+    local powerMod = 0
+
+    for _, ability in ipairs((effect and effect.abilities) or {}) do
+        if ability.type == UnitCards.ABILITY.BONUS_TRANSFER then
+            powerMod = powerMod + (ability.value or 0)
+        elseif ability.type == UnitCards.ABILITY.CHARGE then
+            sendPower = sendPower + (ability.value or 0) * 0.05
+        elseif ability.type == UnitCards.ABILITY.DEFEND then
+            interceptPower = interceptPower + (ability.value or 0) * 0.5
+        elseif ability.type == UnitCards.ABILITY.AMBUSH then
+            interceptPower = interceptPower + (ability.value or 0) * 0.07
+        end
+    end
+
+    return {
+        sendPower = clamp(sendPower, 0.1, 1.2),
+        recvPower = clamp(recvPower, 0.1, 1.2),
+        interceptPower = clamp(interceptPower, 0, 0.9),
+        powerMod = clamp(powerMod, -0.4, 1.2)
+    }
+end
+
 function UnitCards.getAll()
     return UnitCards.DATABASE
 end
@@ -352,6 +410,8 @@ function UnitCards.createInstance(cardId, position)
     local template = UnitCards.getById(cardId)
     if not template then return nil end
     local effect = position and UnitCards.getEffectAtPosition(cardId, position) or nil
+    local tagMeta = UnitCards.TAGS[cardId] or {}
+    local transfer = buildTransferStats(effect)
     local instance = {
         id = template.id,
         name = template.name,
@@ -360,7 +420,16 @@ function UnitCards.createInstance(cardId, position)
         description = template.description,
         flavorText = template.flavorText,
         instanceId = tostring(math.random(1000000)),
-        position = position
+        position = position,
+        tags = {
+            dynasty = tagMeta.dynasty,
+            surname = tagMeta.surname,
+            origin = tagMeta.origin
+        },
+        sendPower = transfer.sendPower,
+        recvPower = transfer.recvPower,
+        interceptPower = transfer.interceptPower,
+        powerMod = transfer.powerMod
     }
     if effect then
         instance.hp = effect.hp or 10
