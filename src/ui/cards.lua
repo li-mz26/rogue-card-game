@@ -108,22 +108,15 @@ local function calcRating(card)
 end
 
 local function drawStatBadge(icon, label, value, x, y, w, h)
-    love.graphics.setColor(0.10, 0.14, 0.22, 1)
-    love.graphics.rectangle("fill", x, y, w, h, 8)
-    love.graphics.setColor(0.22, 0.30, 0.44, 1)
-    love.graphics.rectangle("line", x, y, w, h, 8)
-
-    if icon then
-        drawImageInRect(icon, x + 8, y + 6, h - 12, h - 12, 0.95)
-    end
-
     love.graphics.setColor(0.84, 0.90, 1.00, 1)
     love.graphics.setFont(getFont(12))
-    love.graphics.print(label, x + h, y + 7)
+    love.graphics.print(label, x + 4, y + 2)
 
     love.graphics.setColor(1, 1, 1, 1)
     love.graphics.setFont(getFont(16))
-    love.graphics.print(tostring(value), x + w - 22, y + 6)
+    local text = tostring(value)
+    local tw = getFont(16):getWidth(text)
+    love.graphics.print(text, x + w - tw - 4, y)
 end
 
 local function drawLayeredCard(card, x, y, w, h, selected)
@@ -151,7 +144,7 @@ local function drawLayeredCard(card, x, y, w, h, selected)
     end
     local portraitW = portrait and (portrait:getWidth() * portraitScale) or 0
     local portraitH = portrait and (portrait:getHeight() * portraitScale) or 0
-    local portraitX = x + w - portraitW - 42
+    local portraitX = x + w - portraitW - 24
     local portraitY = y + 48
     drawImageAtScale(portrait, portraitX, portraitY, portraitScale, 0.96)
     love.graphics.setScissor()
