@@ -29,8 +29,8 @@ UnitCards.ABILITY = {
 UnitCards.DATABASE = {
     {
         id = "liu_bei",
-        name = "Liu Bei",
-        title = "Emperor Zhaolie",
+        name = "刘备",
+        title = "昭烈帝",
         rarity = UnitCards.RARITY.RARE,
         description = "Benevolent leader",
         flavorText = "Do not evil though small",
@@ -43,8 +43,8 @@ UnitCards.DATABASE = {
     },
     {
         id = "cao_cao",
-        name = "Cao Cao",
-        title = "Emperor Wu",
+        name = "曹操",
+        title = "武帝",
         rarity = UnitCards.RARITY.RARE,
         description = "Strategic genius",
         flavorText = "Better I betray",
@@ -57,8 +57,8 @@ UnitCards.DATABASE = {
     },
     {
         id = "guan_yu",
-        name = "Guan Yu",
-        title = "Saint of War",
+        name = "关羽",
+        title = "武圣",
         rarity = UnitCards.RARITY.LEGENDARY,
         description = "Mighty warrior",
         flavorText = "Jade can be crushed",
@@ -71,8 +71,8 @@ UnitCards.DATABASE = {
     },
     {
         id = "zhuge_liang",
-        name = "Zhuge Liang",
-        title = "Sleeping Dragon",
+        name = "诸葛亮",
+        title = "卧龙",
         rarity = UnitCards.RARITY.LEGENDARY,
         description = "Master strategist",
         flavorText = "Devoted to the end",
@@ -85,8 +85,8 @@ UnitCards.DATABASE = {
     },
     {
         id = "zhang_fei",
-        name = "Zhang Fei",
-        title = "Ten Thousand Enemy",
+        name = "张飞",
+        title = "万人敌",
         rarity = UnitCards.RARITY.RARE,
         description = "Fierce warrior",
         flavorText = "I am Zhang Fei!",
@@ -99,8 +99,8 @@ UnitCards.DATABASE = {
     },
     {
         id = "zhao_yun",
-        name = "Zhao Yun",
-        title = "General of Victory",
+        name = "赵云",
+        title = "常胜将军",
         rarity = UnitCards.RARITY.RARE,
         description = "Brave and loyal",
         flavorText = "I am Zhao Yun!",
@@ -113,8 +113,8 @@ UnitCards.DATABASE = {
     },
     {
         id = "sun_quan",
-        name = "Sun Quan",
-        title = "Emperor Da",
+        name = "孙权",
+        title = "大帝",
         rarity = UnitCards.RARITY.RARE,
         description = "Defensive ruler",
         flavorText = "Like Sun Zhongmou",
@@ -127,8 +127,8 @@ UnitCards.DATABASE = {
     },
     {
         id = "zhou_yu",
-        name = "Zhou Yu",
-        title = "Handsome Zhou",
+        name = "周瑜",
+        title = "美周郎",
         rarity = UnitCards.RARITY.RARE,
         description = "Talented commander",
         flavorText = "Why Zhou Yu?",
@@ -141,8 +141,8 @@ UnitCards.DATABASE = {
     },
     {
         id = "simayi",
-        name = "Sima Yi",
-        title = "Tomb Tiger",
+        name = "司马懿",
+        title = "冢虎",
         rarity = UnitCards.RARITY.RARE,
         description = "Cunning strategist",
         flavorText = "Adapt to changes",
@@ -155,8 +155,8 @@ UnitCards.DATABASE = {
     },
     {
         id = "huang_zhong",
-        name = "Huang Zhong",
-        title = "Old But Strong",
+        name = "黄忠",
+        title = "老当益壮",
         rarity = UnitCards.RARITY.UNCOMMON,
         description = "Veteran archer",
         flavorText = "My blade is sharp",
@@ -169,8 +169,8 @@ UnitCards.DATABASE = {
     },
     {
         id = "dian_wei",
-        name = "Dian Wei",
-        title = "Evil Comes",
+        name = "典韦",
+        title = "恶来",
         rarity = UnitCards.RARITY.UNCOMMON,
         description = "Bodyguard of Cao",
         flavorText = "Go my lord!",
@@ -183,8 +183,8 @@ UnitCards.DATABASE = {
     },
     {
         id = "zhang_liao",
-        name = "Zhang Liao",
-        title = "Fear at Xiaoyao",
+        name = "张辽",
+        title = "威震逍遥津",
         rarity = UnitCards.RARITY.RARE,
         description = "Defeated ten thousand",
         flavorText = "Who dares fight?",
@@ -197,8 +197,8 @@ UnitCards.DATABASE = {
     },
     {
         id = "taishi_ci",
-        name = "Taishi Ci",
-        title = "Loyal and Faithful",
+        name = "太史慈",
+        title = "义信",
         rarity = UnitCards.RARITY.UNCOMMON,
         description = "Skilled archer",
         flavorText = "Make a name!",
@@ -211,8 +211,8 @@ UnitCards.DATABASE = {
     },
     {
         id = "lv_meng",
-        name = "Lu Meng",
-        title = "Scholar Warrior",
+        name = "吕蒙",
+        title = "士别三日",
         rarity = UnitCards.RARITY.UNCOMMON,
         description = "Learned general",
         flavorText = "Study and fight",
@@ -225,8 +225,8 @@ UnitCards.DATABASE = {
     },
     {
         id = "gan_ning",
-        name = "Gan Ning",
-        title = "Bell of Waves",
+        name = "甘宁",
+        title = "锦帆贼",
         rarity = UnitCards.RARITY.UNCOMMON,
         description = "Pirate turned general",
         flavorText = "Ring the bells!",
@@ -239,8 +239,8 @@ UnitCards.DATABASE = {
     },
     {
         id = "xu_chu",
-        name = "Xu Chu",
-        title = "Tiger Guard",
+        name = "许褚",
+        title = "虎痴",
         rarity = UnitCards.RARITY.UNCOMMON,
         description = "Cao Cao's guard",
         flavorText = "I guard the lord",
@@ -253,8 +253,8 @@ UnitCards.DATABASE = {
     },
     {
         id = "ma_chao",
-        name = "Ma Chao",
-        title = "Splendid Ma",
+        name = "马超",
+        title = "锦马超",
         rarity = UnitCards.RARITY.RARE,
         description = "Fierce cavalry",
         flavorText = "The Ma family!",
@@ -267,8 +267,8 @@ UnitCards.DATABASE = {
     },
     {
         id = "huang_gai",
-        name = "Huang Gai",
-        title = "Old General",
+        name = "黄盖",
+        title = "老将",
         rarity = UnitCards.RARITY.COMMON,
         description = "Veteran of Wu",
         flavorText = "Fake surrender!",
@@ -281,8 +281,8 @@ UnitCards.DATABASE = {
     },
     {
         id = "wei_yan",
-        name = "Wei Yan",
-        title = "Double Blade",
+        name = "魏延",
+        title = "双刃剑",
         rarity = UnitCards.RARITY.UNCOMMON,
         description = "Fierce general",
         flavorText = "Who am I?",
@@ -295,8 +295,8 @@ UnitCards.DATABASE = {
     },
     {
         id = "jiang_wei",
-        name = "Jiang Wei",
-        title = "Young Qilin",
+        name = "姜维",
+        title = "幼麟",
         rarity = UnitCards.RARITY.UNCOMMON,
         description = "Zhuge's heir",
         flavorText = "Restore Han!",
@@ -309,8 +309,8 @@ UnitCards.DATABASE = {
     },
     {
         id = "xun_yu",
-        name = "Xun Yu",
-        title = "King's Helper",
+        name = "荀彧",
+        title = "王佐之才",
         rarity = UnitCards.RARITY.UNCOMMON,
         description = "Cao Cao's advisor",
         flavorText = "Loyal and true",
@@ -383,6 +383,93 @@ end
 
 function UnitCards.getAll()
     return UnitCards.DATABASE
+end
+
+-- Six-dimensional stats for FIFA/NBA2K style card display
+-- 武力(Martial), 智谋(Strategy), 统率(Command), 防御(Defense), 速度(Speed), 体力(Vitality)
+UnitCards.STAT_NAMES = { "Martial", "Strategy", "Command", "Defense", "Speed", "Vitality" }
+UnitCards.STAT_LABELS = { "武力", "智谋", "统率", "防御", "速度", "体力" }
+
+local function calcSixDimensionalStats(cardData)
+    local cmd = cardData.positionEffects and cardData.positionEffects.command or {}
+    local vg = cardData.positionEffects and cardData.positionEffects.vanguard or {}
+    local ct = cardData.positionEffects and cardData.positionEffects.center or {}
+    local rr = cardData.positionEffects and cardData.positionEffects.rear or {}
+
+    local hp = cmd.hp or 30
+    local vgAtk = vg.attack or 0
+    local vgDef = vg.defense or 0
+    local ctAtk = ct.attack or 0
+    local ctDef = ct.defense or 0
+    local rrAtk = rr.attack or 0
+    local rrDef = rr.defense or 0
+
+    local abilities = cmd.abilities or {}
+
+    local martial = 50 + vgAtk * 12 + rrAtk * 3
+    local strategy = 50 + ctAtk * 10 + rrAtk * 2
+    local command = 50 + ctDef * 10 + (hp - 30) * 0.8
+    local defense = 50 + vgDef * 12 + ctDef * 8 + rrDef * 4
+    local speed = 50 + vgAtk * 6 + vgDef * 3
+    local vitality = 40 + hp * 1.2
+
+    for _, ab in ipairs(abilities) do
+        if ab.type == "bonus_attack" then
+            martial = martial + (ab.value or 0) * 8
+        elseif ab.type == "bonus_defense" then
+            defense = defense + (ab.value or 0) * 10
+        elseif ab.type == "bonus_transfer" then
+            command = command + (ab.value or 0) * 25
+        elseif ab.type == "bonus_generate" then
+            strategy = strategy + (ab.value or 0) * 6
+        elseif ab.type == "charge" then
+            martial = martial + (ab.value or 0) * 5
+            speed = speed + (ab.value or 0) * 4
+        elseif ab.type == "ambush" then
+            strategy = strategy + (ab.value or 0) * 8
+            speed = speed + (ab.value or 0) * 5
+        elseif ab.type == "defend" then
+            defense = defense + (ab.value or 0) * 20
+        end
+    end
+
+    local rarityBoost = {
+        common = 0,
+        uncommon = 5,
+        rare = 10,
+        legendary = 18
+    }
+    local boost = rarityBoost[cardData.rarity] or 0
+    martial = math.min(99, math.floor(martial + boost))
+    strategy = math.min(99, math.floor(strategy + boost))
+    command = math.min(99, math.floor(command + boost))
+    defense = math.min(99, math.floor(defense + boost))
+    speed = math.min(99, math.floor(speed + boost))
+    vitality = math.min(99, math.floor(vitality + boost))
+
+    return {
+        martial = martial,
+        strategy = strategy,
+        command = command,
+        defense = defense,
+        speed = speed,
+        vitality = vitality
+    }
+end
+
+function UnitCards.calcOverallRating(sixStats)
+    if not sixStats then return 50 end
+    local weights = { 1.15, 0.95, 1.0, 0.9, 0.85, 0.75 }
+    local total = 0
+    local statList = { sixStats.martial, sixStats.strategy, sixStats.command, sixStats.defense, sixStats.speed, sixStats.vitality }
+    for i, v in ipairs(statList) do
+        total = total + v * weights[i]
+    end
+    return math.floor(total / 5.6)
+end
+
+function UnitCards.getCardStats(cardData)
+    return calcSixDimensionalStats(cardData)
 end
 
 function UnitCards.getById(id)

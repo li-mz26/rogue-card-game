@@ -1,4 +1,4 @@
-﻿--[[
+--[[
     Main menu UI
 --]]
 
@@ -7,9 +7,13 @@ local Menu = {}
 local buttons = {}
 local chineseFont = nil
 local chineseFontSmall = nil
+local backgroundImage = nil
+local titleImage = nil
+local buttonImage = nil
 
 local function loadChineseFonts()
     local fontPaths = {
+        "assets/fonts/feibo.otf",
         "assets/fonts/simhei.ttf",
         "assets/fonts/simkai.ttf",
         "C:/Windows/Fonts/simhei.ttf",
@@ -40,24 +44,61 @@ local function loadChineseFonts()
     return false
 end
 
+local function safeLoadImage(path)
+    local ok, img = pcall(love.graphics.newImage, path)
+    if ok and img then
+        img:setFilter("linear", "linear")
+        return img
+    end
+    return nil
+end
+
+-- Base resolution for scaling calculations
+local BASE_WIDTH = 1920
+local BASE_HEIGHT = 1080
+
+local function getScale()
+    local screenWidth = love.graphics.getWidth()
+    local screenHeight = love.graphics.getHeight()
+    return math.min(screenWidth / BASE_WIDTH, screenHeight / BASE_HEIGHT)
+end
+
 function Menu.init()
     if not chineseFont then
         loadChineseFonts()
     end
 
+    -- Load images
+    backgroundImage = safeLoadImage("assets/images/backgrounds/bg_menu.png")
+    titleImage = safeLoadImage("assets/images/backgrounds/title.png")
+    buttonImage = safeLoadImage("assets/images/backgrounds/button.png")
+
+    buttons = {}
+    Menu.recalculateLayout()
+end
+
+function Menu.recalculateLayout()
     buttons = {}
 
     local screenWidth = love.graphics.getWidth()
     local screenHeight = love.graphics.getHeight()
     local centerX = screenWidth / 2
-    local startY = screenHeight / 2 - 50
+    local scale = getScale()
+
+    -- Button dimensions scaled by resolution
+    local baseButtonW = 180
+    local baseButtonH = 50
+    local buttonW = baseButtonW * scale
+    local buttonH = baseButtonH * scale
+    local gap = 15 * scale
+    local startY = screenHeight / 2 + 50 * scale
 
     table.insert(buttons, {
-        text = "Start Game",
-        x = centerX - 100,
+        text = "开始游戏",
+        x = centerX - buttonW / 2,
         y = startY,
-        width = 200,
-        height = 50,
+        width = buttonW,
+        height = buttonH,
         onClick = function()
             local GameState = require('src.game.gamestate')
             GameState.switch("deployment")
@@ -65,11 +106,11 @@ function Menu.init()
     })
 
     table.insert(buttons, {
-        text = "Card Collection",
-        x = centerX - 100,
-        y = startY + 70,
-        width = 200,
-        height = 50,
+        text = "卡牌收藏",
+        x = centerX - buttonW / 2,
+        y = startY + buttonH + gap,
+        width = buttonW,
+        height = buttonH,
         onClick = function()
             local GameState = require('src.game.gamestate')
             GameState.switch("cards")
@@ -77,11 +118,23 @@ function Menu.init()
     })
 
     table.insert(buttons, {
-        text = "Quit",
-        x = centerX - 100,
-        y = startY + 140,
-        width = 200,
-        height = 50,
+        text = "游戏设置",
+        x = centerX - buttonW / 2,
+        y = startY + (buttonH + gap) * 2,
+        width = buttonW,
+        height = buttonH,
+        onClick = function()
+            local GameState = require('src.game.gamestate')
+            GameState.switch("settings")
+        end
+    })
+
+    table.insert(buttons, {
+        text = "退出游戏",
+        x = centerX - buttonW / 2,
+        y = startY + (buttonH + gap) * 3,
+        width = buttonW,
+        height = buttonH,
         onClick = function()
             love.event.quit()
         end
@@ -99,35 +152,61 @@ end
 function Menu.draw()
     local screenWidth = love.graphics.getWidth()
     local screenHeight = love.graphics.getHeight()
+    local scale = getScale()
 
-    love.graphics.setColor(0.1, 0.1, 0.15)
-    love.graphics.rectangle("fill", 0, 0, screenWidth, screenHeight)
+    -- Draw background image
+    if backgroundImage then
+        love.graphics.setColor(1, 1, 1, 1)
+        local bgScale = math.max(screenWidth / backgroundImage:getWidth(), screenHeight / backgroundImage:getHeight())
+        local drawW = backgroundImage:getWidth() * bgScale
+        local drawH = backgroundImage:getHeight() * bgScale
+        local offsetX = (drawW - screenWidth) / 2
+        local offsetY = (drawH - screenHeight) / 2
+        love.graphics.draw(backgroundImage, -offsetX, -offsetY, 0, bgScale, bgScale)
+    else
+        love.graphics.setColor(0.1, 0.1, 0.15)
+        love.graphics.rectangle("fill", 0, 0, screenWidth, screenHeight)
+    end
 
-    love.graphics.setColor(0.9, 0.8, 0.4)
-    local title = "Rogue Card Game"
-    local titleFont = love.graphics.newFont(48)
-    love.graphics.setFont(titleFont)
-    local titleWidth = titleFont:getWidth(title)
-    love.graphics.print(title, (screenWidth - titleWidth) / 2, 150)
+    -- Draw title image
+    if titleImage then
+        love.graphics.setColor(1, 1, 1, 1)
+        local titleScale = 0.4 * scale
+        local titleW = titleImage:getWidth() * titleScale
+        local titleH = titleImage:getHeight() * titleScale
+        love.graphics.draw(titleImage, (screenWidth - titleW) / 2, 20 * scale, 0, titleScale, titleScale)
+    end
 
+    -- Draw buttons
     love.graphics.setFont(chineseFont or love.graphics.newFont(24))
     for _, btn in ipairs(buttons) do
-        if btn.hovered then
-            love.graphics.setColor(0.3, 0.5, 0.7)
+        -- Button lift effect on hover
+        local liftOffset = btn.hovered and -4 * scale or 0
+        local drawY = btn.y + liftOffset
+
+        if buttonImage then
+            -- Draw button image
+            love.graphics.setColor(1, 1, 1, 1)
+            love.graphics.draw(buttonImage, btn.x, drawY, 0, btn.width / buttonImage:getWidth(), btn.height / buttonImage:getHeight())
         else
-            love.graphics.setColor(0.2, 0.3, 0.4)
+            -- Fallback: drawn button
+            if btn.hovered then
+                love.graphics.setColor(0.3, 0.5, 0.7)
+            else
+                love.graphics.setColor(0.2, 0.3, 0.4)
+            end
+            love.graphics.rectangle("fill", btn.x, drawY, btn.width, btn.height, 5 * scale, 5 * scale)
+            love.graphics.setColor(0.5, 0.6, 0.7)
+            love.graphics.rectangle("line", btn.x, drawY, btn.width, btn.height, 5 * scale, 5 * scale)
         end
-        love.graphics.rectangle("fill", btn.x, btn.y, btn.width, btn.height, 5, 5)
 
-        love.graphics.setColor(0.5, 0.6, 0.7)
-        love.graphics.rectangle("line", btn.x, btn.y, btn.width, btn.height, 5, 5)
-
-        love.graphics.setColor(1, 1, 1)
+        -- Draw button text (black color)
+        love.graphics.setColor(0, 0, 0)
         local font = love.graphics.getFont()
         local textWidth = font:getWidth(btn.text)
         local textHeight = font:getHeight()
         love.graphics.print(btn.text, btn.x + (btn.width - textWidth) / 2,
-            btn.y + (btn.height - textHeight) / 2)
+            drawY + (btn.height - textHeight) / 2)
     end
 
     love.graphics.setColor(1, 1, 1)

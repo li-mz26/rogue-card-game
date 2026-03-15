@@ -29,6 +29,11 @@ end
 
 function love.keypressed(key)
     Input.keypressed(key)
+    GameState.keypressed(key)
+end
+
+function love.textinput(text)
+    GameState.textinput(text)
 end
 
 function love.mousepressed(x, y, button)

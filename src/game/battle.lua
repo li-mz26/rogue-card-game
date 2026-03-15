@@ -2,6 +2,9 @@ local Battle = {}
 
 local GameState = nil
 local Deployment = nil
+local backgroundImage = nil
+local buttonImgs = {}
+local CardRenderer = nil  -- Lazy loaded
 
 Battle.ROW = {
     COMMAND = 1,
@@ -11,21 +14,23 @@ Battle.ROW = {
 }
 
 Battle.ROW_NAME = {
-    [Battle.ROW.COMMAND] = "主将",
+    [Battle.ROW.COMMAND] = "大营",
     [Battle.ROW.VANGUARD] = "前锋",
     [Battle.ROW.CENTER] = "中军",
     [Battle.ROW.REAR] = "后卫",
 }
 
-Battle.FORMATION_ORDER = {
-    {1, Battle.ROW.COMMAND},
-    {2, Battle.ROW.VANGUARD},
-    {1, Battle.ROW.REAR},
-    {2, Battle.ROW.CENTER},
-    {1, Battle.ROW.CENTER},
-    {2, Battle.ROW.REAR},
-    {1, Battle.ROW.VANGUARD},
-    {2, Battle.ROW.COMMAND},
+-- Horizontal layout: 8 columns alternating between players
+-- Order from left to right: P1 Command, P2 Vanguard, P1 Rear, P2 Center, P1 Center, P2 Rear, P1 Vanguard, P2 Command
+Battle.COLUMN_LAYOUT = {
+    { player = 1, rowType = Battle.ROW.COMMAND, label = "我方大营" },
+    { player = 2, rowType = Battle.ROW.VANGUARD, label = "敌方前锋" },
+    { player = 1, rowType = Battle.ROW.REAR, label = "我方后卫" },
+    { player = 2, rowType = Battle.ROW.CENTER, label = "敌方中军" },
+    { player = 1, rowType = Battle.ROW.CENTER, label = "我方中军" },
+    { player = 2, rowType = Battle.ROW.REAR, label = "敌方后卫" },
+    { player = 1, rowType = Battle.ROW.VANGUARD, label = "我方前锋" },
+    { player = 2, rowType = Battle.ROW.COMMAND, label = "敌方大营" },
 }
 
 local chineseFont = {}
@@ -71,6 +76,30 @@ end
 local function safeTags(tags)
     if type(tags) == "table" then return tags end
     return {}
+end
+
+-- UTF-8 safe string truncation
+local function utf8Truncate(str, maxChars)
+    if not str then return "" end
+    local charCount = 0
+    local bytePos = 1
+    while bytePos <= #str and charCount < maxChars do
+        local b = string.byte(str, bytePos)
+        if b < 128 then
+            bytePos = bytePos + 1
+        elseif b < 224 then
+            bytePos = bytePos + 2
+        elseif b < 240 then
+            bytePos = bytePos + 3
+        else
+            bytePos = bytePos + 4
+        end
+        charCount = charCount + 1
+    end
+    if bytePos <= #str then
+        return string.sub(str, 1, bytePos - 1) .. "…"
+    end
+    return str
 end
 
 local function log(message)
@@ -408,40 +437,75 @@ local function findNearestEnemyInterceptor(defender, rowType, laneIndex)
     return best.unit
 end
 
-local function getUnitPosition(playerId, rowType, unitIndex, screenWidth)
-    local startX = screenWidth / 2 - 200
-    local startY = 112
-    local rowHeight = 66
-    local unitWidth = 102
-    local unitGap = 10
-
-    for i, formation in ipairs(Battle.FORMATION_ORDER) do
-        if formation[1] == playerId and formation[2] == rowType then
-            local y = startY + (i - 1) * rowHeight
-            local units = players[playerId].units[rowType] or {}
-            local rowWidth = #units * unitWidth + (#units - 1) * unitGap
-            local rowStartX = startX + (400 - rowWidth) / 2
-            local x = rowStartX + (unitIndex - 1) * (unitWidth + unitGap)
-            return { x = x + unitWidth / 2, y = y + rowHeight / 2 }
+local function getUnitPosition(playerId, rowType, unitIndex, screenWidth, screenHeight)
+    -- Find which column this unit belongs to
+    local colIndex = nil
+    for i, col in ipairs(Battle.COLUMN_LAYOUT) do
+        if col.player == playerId and col.rowType == rowType then
+            colIndex = i
+            break
         end
     end
+    if not colIndex then return nil end
 
-    return nil
+    -- Calculate column position
+    local numCols = #Battle.COLUMN_LAYOUT
+    local colWidth = screenWidth / numCols
+    local colCenterX = colWidth * (colIndex - 0.5)
+
+    -- Calculate card dimensions
+    local cardW = colWidth * 0.7
+    local cardH = cardW * 1.4
+    local cardGap = 5
+
+    -- Get the player and count units in this row
+    local player = players[playerId]
+    if not player then return nil end
+
+    local units = player.units[rowType] or {}
+    local numUnits = 0
+    for _ in ipairs(units) do
+        numUnits = numUnits + 1
+    end
+
+    if numUnits == 0 then return nil end
+
+    -- Calculate total height and center the stack around center axis
+    local centerY = screenHeight / 2
+    local totalHeight = numUnits * cardH + math.max(0, numUnits - 1) * cardGap
+    local startY = centerY - totalHeight / 2
+
+    -- Calculate Y position for this unit (1-indexed)
+    local cardY = startY + (unitIndex - 1) * (cardH + cardGap)
+
+    return { x = colCenterX, y = cardY + cardH / 2 }
 end
 
-local function getCommandPosition(playerId, screenWidth)
-    local startX = screenWidth / 2 - 200
-    local startY = 112
-    local rowHeight = 66
-
-    for i, formation in ipairs(Battle.FORMATION_ORDER) do
-        if formation[1] == playerId and formation[2] == Battle.ROW.COMMAND then
-            local y = startY + (i - 1) * rowHeight
-            return { x = startX + 200, y = y + rowHeight / 2 }
+local function getCommandPosition(playerId, screenWidth, screenHeight)
+    -- Find command column for this player
+    local colIndex = nil
+    for i, col in ipairs(Battle.COLUMN_LAYOUT) do
+        if col.player == playerId and col.rowType == Battle.ROW.COMMAND then
+            colIndex = i
+            break
         end
     end
+    if not colIndex then return nil end
 
-    return nil
+    -- Calculate column position
+    local numCols = #Battle.COLUMN_LAYOUT
+    local colWidth = screenWidth / numCols
+    local colCenterX = colWidth * (colIndex - 0.5)
+
+    -- Calculate card dimensions
+    local cardW = colWidth * 0.7
+    local cardH = cardW * 1.4
+
+    -- Single card centered on center axis
+    local centerY = screenHeight / 2
+    local cardY = centerY - cardH / 2
+
+    return { x = colCenterX, y = cardY + cardH / 2 }
 end
 
 function Battle.createColoredPowerBall(sourcePos, targetPos, power, color, onArrive)
@@ -502,10 +566,7 @@ local function drawMiniCard(unit, x, y, width, height)
     love.graphics.rectangle("line", x, y, width, height, 4)
     love.graphics.setLineWidth(1)
 
-    local unitName = unit.name or "单位"
-    if #unitName > 8 then
-        unitName = string.sub(unitName, 1, 7) .. "…"
-    end
+    local unitName = utf8Truncate(unit.name or "单位", 6)
 
     love.graphics.setColor(1, 1, 1)
     love.graphics.setFont(getFont(10))
@@ -528,7 +589,8 @@ end
 local function transferToEnemyCommand(sender, laneIndex, packetPower, sourcePos)
     local defender = players[activePlayer == 1 and 2 or 1]
     local screenWidth = love.graphics.getWidth()
-    local enemyCommandPos = getCommandPosition(defender.id, screenWidth)
+    local screenHeight = love.graphics.getHeight()
+    local enemyCommandPos = getCommandPosition(defender.id, screenWidth, screenHeight)
     if not enemyCommandPos then return end
 
     local receiver = {
@@ -558,13 +620,14 @@ local function transferRearToCenter(sender, laneIndex, packetPower, sourcePos)
     local player = players[activePlayer]
     local defender = players[activePlayer == 1 and 2 or 1]
     local screenWidth = love.graphics.getWidth()
+    local screenHeight = love.graphics.getHeight()
 
     local centerSlots = getRowSlots(player, Battle.ROW.CENTER)
     local targetSlot = chooseTargetByDistribution(sender, centerSlots)
     if not targetSlot then return end
 
     local receiver = targetSlot.unit
-    local centerPos = getUnitPosition(player.id, Battle.ROW.CENTER, targetSlot.index, screenWidth)
+    local centerPos = getUnitPosition(player.id, Battle.ROW.CENTER, targetSlot.index, screenWidth, screenHeight)
     if not centerPos then return end
 
     local interceptor = findNearestEnemyInterceptor(defender, Battle.ROW.CENTER, targetSlot.index)
@@ -583,7 +646,7 @@ local function transferRearToCenter(sender, laneIndex, packetPower, sourcePos)
         if not nextSlot then return end
 
         local nextReceiver = nextSlot.unit
-        local vanguardPos = getUnitPosition(player.id, Battle.ROW.VANGUARD, nextSlot.index, screenWidth)
+        local vanguardPos = getUnitPosition(player.id, Battle.ROW.VANGUARD, nextSlot.index, screenWidth, screenHeight)
         if not vanguardPos then return end
 
         local nextInterceptor = findNearestEnemyInterceptor(defender, Battle.ROW.REAR, nextSlot.index)
@@ -607,8 +670,9 @@ function Battle.startTransfer()
     local player = players[activePlayer]
     local defender = players[activePlayer == 1 and 2 or 1]
     local screenWidth = love.graphics.getWidth()
+    local screenHeight = love.graphics.getHeight()
 
-    local commandPos = getCommandPosition(player.id, screenWidth)
+    local commandPos = getCommandPosition(player.id, screenWidth, screenHeight)
     if not commandPos then
         log("错误：找不到主将位置，回合自动结束")
         currentPhase = "waiting"
@@ -633,7 +697,7 @@ function Battle.startTransfer()
         local rearTarget = chooseTargetByDistribution(commandNode, rearSlots)
 
         if rearTarget then
-            local rearPos = getUnitPosition(player.id, Battle.ROW.REAR, rearTarget.index, screenWidth)
+            local rearPos = getUnitPosition(player.id, Battle.ROW.REAR, rearTarget.index, screenWidth, screenHeight)
             if rearPos then
                 local receiver = rearTarget.unit
                 local interceptor = findNearestEnemyInterceptor(defender, Battle.ROW.VANGUARD, rearTarget.index)
@@ -689,6 +753,26 @@ end
 
 function Battle.init()
     loadChineseFonts()
+
+    -- Load CardRenderer for card drawing
+    CardRenderer = require('src.cards.card_renderer')
+    CardRenderer.init()
+
+    -- Load background image
+    local ok, img = pcall(love.graphics.newImage, "assets/images/backgrounds/bg_battle.png")
+    if ok and img then
+        backgroundImage = img
+        backgroundImage:setFilter("linear", "linear")
+    end
+
+    -- Load button images
+    for i = 1, 3 do
+        local okBtn, imgBtn = pcall(love.graphics.newImage, string.format("assets/images/backgrounds/button%d.png", i))
+        if okBtn and imgBtn then
+            buttonImgs[i] = imgBtn
+            buttonImgs[i]:setFilter("linear", "linear")
+        end
+    end
 
     local p1 = deploymentData and deploymentData.player1 or nil
     local p2 = ensureOpponentData()
@@ -753,82 +837,109 @@ local function drawPowerBalls()
 end
 
 function Battle.drawFormation(screenWidth, screenHeight)
-    local startX = screenWidth / 2 - 200
-    local startY = 112
-    local rowHeight = 66
-    local unitWidth = 102
-    local unitGap = 10
+    local numCols = #Battle.COLUMN_LAYOUT
+    local colWidth = screenWidth / numCols
+    local centerY = screenHeight / 2
 
-    for i, formation in ipairs(Battle.FORMATION_ORDER) do
-        local playerId = formation[1]
-        local rowType = formation[2]
-        local player = players[playerId]
-        local y = startY + (i - 1) * rowHeight
+    -- Card dimensions
+    local cardW = colWidth * 0.7
+    local cardH = cardW * 1.4
+    local cardGap = 5
 
-        if playerId == 1 then
-            love.graphics.setColor(0.2, 0.4, 0.3, 0.28)
+    -- Draw each column
+    for colIndex, col in ipairs(Battle.COLUMN_LAYOUT) do
+        local player = players[col.player]
+        local colCenterX = colWidth * (colIndex - 0.5)
+        local cardX = colCenterX - cardW / 2
+
+        -- Draw column label
+        love.graphics.setColor(col.player == 1 and 0.3 or 0.6, col.player == 1 and 0.6 or 0.3, 0.4)
+        love.graphics.setFont(getFont(12))
+        local labelText = col.label
+        local labelW = getFont(12):getWidth(labelText)
+        love.graphics.print(labelText, colCenterX - labelW / 2, 70)
+
+        if col.rowType == Battle.ROW.COMMAND then
+            -- Draw command card - centered around center axis
+            local command = player.command
+            if command and command.card then
+                -- Single card centered on center axis
+                local cardY = centerY - cardH / 2
+
+                -- Draw card using CardRenderer
+                CardRenderer.drawCard(command.card, cardX, cardY, cardW, cardH, {
+                    selected = false,
+                    time = love.timer.getTime()
+                })
+
+                -- Draw HP bar below the card
+                local hpBarY = cardY + cardH + 3
+                local hpBarW = cardW - 20
+                local hpBarH = 10
+                local hpBarX = cardX + 10
+
+                love.graphics.setColor(0.15, 0.15, 0.18, 0.9)
+                love.graphics.rectangle("fill", hpBarX, hpBarY, hpBarW, hpBarH, 3)
+
+                local hpRatio = math.max(0, math.min(1, player.commandHp / player.maxCommandHp))
+                love.graphics.setColor(0.9, 0.3, 0.25, 0.9)
+                love.graphics.rectangle("fill", hpBarX, hpBarY, hpBarW * hpRatio, hpBarH, 3)
+
+                love.graphics.setColor(1, 1, 1, 0.9)
+                love.graphics.setFont(getFont(8))
+                local hpText = player.commandHp .. "/" .. player.maxCommandHp
+                local hpTextW = getFont(8):getWidth(hpText)
+                love.graphics.print(hpText, hpBarX + (hpBarW - hpTextW) / 2, hpBarY + 1)
+            end
         else
-            love.graphics.setColor(0.4, 0.2, 0.2, 0.28)
-        end
-        love.graphics.rectangle("fill", startX - 50, y, 500, rowHeight - 6)
+            -- Draw regular units - symmetrically distributed around center axis
+            local units = player.units[col.rowType] or {}
+            local rowUnits = {}
+            for i, unit in ipairs(units) do
+                if unit then
+                    table.insert(rowUnits, { unit = unit, index = i })
+                end
+            end
 
-        if rowType == Battle.ROW.COMMAND then
-            local commandX = startX + 140
-            local commandW = 120
-            local commandH = rowHeight - 14
-            local commandRarity = (player.command and player.command.rarity) or "rare"
-            local rc = getRarityColor(commandRarity)
+            local numUnits = #rowUnits
+            if numUnits > 0 then
+                -- Calculate total height of all cards including gaps
+                local totalHeight = numUnits * cardH + math.max(0, numUnits - 1) * cardGap
 
-            love.graphics.setColor(rc[1], rc[2], rc[3], 0.2)
-            love.graphics.rectangle("fill", commandX - 2, y + 4, commandW + 4, commandH + 4, 6)
-            love.graphics.setColor(0.14, 0.16, 0.22, 0.96)
-            love.graphics.rectangle("fill", commandX, y + 6, commandW, commandH, 5)
-            love.graphics.setColor(rc[1], rc[2], rc[3], 0.95)
-            love.graphics.rectangle("line", commandX, y + 6, commandW, commandH, 5)
+                -- Center the stack around the center axis
+                -- startY is the top of the first card
+                local startY = centerY - totalHeight / 2
 
-            local commandName = (player.command and player.command.name) or "主将"
-            if #commandName > 9 then commandName = string.sub(commandName, 1, 8) .. "…" end
-            love.graphics.setColor(1, 1, 1)
-            love.graphics.setFont(getFont(12))
-            love.graphics.print(commandName, commandX + 8, y + 11)
-            love.graphics.setColor(rc[1], rc[2], rc[3], 0.95)
-            love.graphics.setFont(getFont(9))
-            love.graphics.print(rarityLabel[commandRarity] or "R", commandX + commandW - 16, y + 11)
+                for i, unitData in ipairs(rowUnits) do
+                    local unit = unitData.unit
+                    -- Cards arranged from top to bottom, centered around center axis
+                    local cardY = startY + (i - 1) * (cardH + cardGap)
 
-            love.graphics.setColor(0.12, 0.13, 0.18, 1)
-            love.graphics.rectangle("fill", commandX + 6, y + 27, commandW - 12, 14, 3)
-            love.graphics.setColor(0.9, 0.25, 0.25, 0.9)
-            local hpRatio = math.max(0, math.min(1, player.commandHp / player.maxCommandHp))
-            love.graphics.rectangle("fill", commandX + 6, y + 27, (commandW - 12) * hpRatio, 14, 3)
-            love.graphics.setColor(1, 1, 1)
-            love.graphics.setFont(getFont(9))
-            love.graphics.print(player.commandHp .. "/" .. player.maxCommandHp, commandX + 36, y + 29)
-        else
-            local units = player.units[rowType] or {}
-            local rowWidth = #units * unitWidth + (#units - 1) * unitGap
-            local rowStartX = startX + (400 - rowWidth) / 2
-            for j, unit in ipairs(units) do
-                local x = rowStartX + (j - 1) * (unitWidth + unitGap)
-                drawMiniCard(unit, x, y + 4, unitWidth, rowHeight - 14)
+                    if unit.card then
+                        CardRenderer.drawCard(unit.card, cardX, cardY, cardW, cardH, {
+                            selected = false,
+                            time = love.timer.getTime()
+                        })
+                    else
+                        -- Fallback: draw placeholder
+                        love.graphics.setColor(0.15, 0.15, 0.2, 0.8)
+                        love.graphics.rectangle("fill", cardX, cardY, cardW, cardH, 5)
+                        love.graphics.setColor(0.4, 0.4, 0.5)
+                        love.graphics.rectangle("line", cardX, cardY, cardW, cardH, 5)
+                        love.graphics.setColor(0.6, 0.6, 0.6)
+                        love.graphics.setFont(getFont(12))
+                        love.graphics.print(unit.name or "单位", cardX + 10, cardY + 10)
+                    end
+                end
             end
         end
     end
 
-    for i, player in ipairs(players) do
-        local y = (i == 1) and startY or (startY + 7 * rowHeight)
-        local x = startX + 420
-
-        love.graphics.setColor(0.3, 0.3, 0.3)
-        love.graphics.rectangle("fill", x, y + 10, 150, 20)
-
-        local hpPercent = clamp(player.commandHp / player.maxCommandHp, 0, 1)
-        love.graphics.setColor(0.8, 0.2, 0.2)
-        love.graphics.rectangle("fill", x, y + 10, 150 * hpPercent, 20)
-
-        love.graphics.setColor(1, 1, 1)
-        love.graphics.setFont(getFont(14))
-        love.graphics.print(player.commandHp .. "/" .. player.maxCommandHp, x + 50, y + 12)
-    end
+    -- Draw center line (battle line)
+    love.graphics.setColor(0.9, 0.75, 0.3, 0.5)
+    love.graphics.setLineWidth(3)
+    love.graphics.line(0, centerY, screenWidth, centerY)
+    love.graphics.setLineWidth(1)
 
     drawPowerBalls()
 end
@@ -850,6 +961,7 @@ function Battle.drawButtons(screenWidth, screenHeight)
             y = screenHeight - 100,
             width = 120,
             height = 50,
+            imgIdx = 1,
             onClick = function() Battle.startTransfer() end,
         })
     elseif currentPhase == "victory" then
@@ -859,6 +971,7 @@ function Battle.drawButtons(screenWidth, screenHeight)
             y = screenHeight - 100,
             width = 140,
             height = 50,
+            imgIdx = 3,
             onClick = function() Battle.returnToMenu() end,
         })
     end
@@ -870,15 +983,26 @@ function Battle.drawButtons(screenWidth, screenHeight)
     for _, btn in ipairs(buttons) do
         local hovered = mx >= btn.x and mx <= btn.x + btn.width and my >= btn.y and my <= btn.y + btn.height
 
-        if hovered then
-            love.graphics.setColor(0.4, 0.6, 0.8)
+        -- Draw button with image or fallback
+        local img = buttonImgs[btn.imgIdx or 1]
+        if img then
+            local imgW, imgH = img:getWidth(), img:getHeight()
+            local scale = math.max(btn.width / imgW, btn.height / imgH)
+            local drawW, drawH = imgW * scale, imgH * scale
+            local offsetX, offsetY = (drawW - btn.width) / 2, (drawH - btn.height) / 2
+            love.graphics.setColor(1, 1, 1, hovered and 1 or 0.85)
+            love.graphics.draw(img, btn.x - offsetX, btn.y - offsetY, 0, scale, scale)
         else
-            love.graphics.setColor(0.3, 0.4, 0.5)
-        end
-        love.graphics.rectangle("fill", btn.x, btn.y, btn.width, btn.height, 5)
+            if hovered then
+                love.graphics.setColor(0.4, 0.6, 0.8)
+            else
+                love.graphics.setColor(0.3, 0.4, 0.5)
+            end
+            love.graphics.rectangle("fill", btn.x, btn.y, btn.width, btn.height, 5)
 
-        love.graphics.setColor(0.6, 0.7, 0.8)
-        love.graphics.rectangle("line", btn.x, btn.y, btn.width, btn.height, 5)
+            love.graphics.setColor(0.6, 0.7, 0.8)
+            love.graphics.rectangle("line", btn.x, btn.y, btn.width, btn.height, 5)
+        end
 
         love.graphics.setColor(1, 1, 1)
         local textWidth = font16:getWidth(btn.text)
@@ -923,8 +1047,19 @@ function Battle.draw()
     local screenWidth = love.graphics.getWidth()
     local screenHeight = love.graphics.getHeight()
 
-    love.graphics.setColor(0.1, 0.1, 0.15)
-    love.graphics.rectangle("fill", 0, 0, screenWidth, screenHeight)
+    -- Draw background image
+    if backgroundImage then
+        love.graphics.setColor(1, 1, 1, 1)
+        local scale = math.max(screenWidth / backgroundImage:getWidth(), screenHeight / backgroundImage:getHeight())
+        local drawW = backgroundImage:getWidth() * scale
+        local drawH = backgroundImage:getHeight() * scale
+        local offsetX = (drawW - screenWidth) / 2
+        local offsetY = (drawH - screenHeight) / 2
+        love.graphics.draw(backgroundImage, -offsetX, -offsetY, 0, scale, scale)
+    else
+        love.graphics.setColor(0.1, 0.1, 0.15)
+        love.graphics.rectangle("fill", 0, 0, screenWidth, screenHeight)
+    end
 
     love.graphics.setColor(0.9, 0.8, 0.4)
     love.graphics.setFont(getFont(24))
